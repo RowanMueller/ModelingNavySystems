@@ -4,4 +4,5 @@ from . import views
 urlpatterns = [
     path('devices/', views.DeviceListCreate.as_view(), name='device-list-create'),
     path('upload/', views.FileUploadView.as_view(), name='upload_file'),
+    path('get-devices/', views.GetAllDevices.as_view(), name='get_devices'),
 ]

@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { X } from "lucide-react";
 import axios from "axios";
+import toast from "react-hot-toast";
 
 export default function DragAndDrop() {
   const [files, setFiles] = useState([]);
@@ -77,18 +78,17 @@ export default function DragAndDrop() {
         onClick={async () => {
           const formData = new FormData();
           files.forEach((file) => formData.append("files", file)); // Append multiple files
-          try {
-            const response = await axios.post(
-              "http://localhost:8000/api/v1/upload/",
-              formData,
-              {
-                headers: { "Content-Type": "multipart/form-data" },
-              }
-            );
-            console.log(response.data);
-          } catch (error) {
-            console.error("Upload failed", error);
-          }
+          await axios
+            .post("http://localhost:8000/api/v1/upload/", formData, {
+              headers: { "Content-Type": "multipart/form-data" },
+            })
+            .then((response) => {
+              console.log(response.data);
+              toast.success("Successfully uploaded files");
+            })
+            .catch((error) => {
+              console.error(error);
+            });
         }}
       >
         <span className="text-white">Upload</span>
