@@ -17,6 +17,7 @@ npm i
 ```
 
 <hr>
+
 To run the actual app:
 ```
 npm run dev
