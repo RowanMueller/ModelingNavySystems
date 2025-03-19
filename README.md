@@ -30,6 +30,7 @@ Please watch [this video](https://www.youtube.com/watch?v=t-uAgI-AUxc&t=260s) to
 Python: can be installed [here](https://www.python.org/downloads/)
 <hr>
 STRONGLY RECOMMENDED: Use a virtual environment to install the required packages. You can install it by running the following command (note, for macbook, you may need to use `python3` instead of `python`):
+
 ```
 python -m venv env
 ```
