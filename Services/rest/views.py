@@ -39,7 +39,6 @@ class FileUploadView(APIView):
             })
             
         for file in request.FILES.getlist('files'):
-            break
             file.seek(0)
             if file.name.endswith('.csv'):
                 df = pd.read_csv(file, encoding="utf-8")

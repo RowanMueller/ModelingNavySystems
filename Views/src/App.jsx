@@ -1,8 +1,8 @@
 import "./App.css";
-import DragAndDrop from "./dragAndDrop";
+import DragAndDrop from "./DragAndDrop";
 import { Toaster } from "react-hot-toast";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import GraphPage from "./graphPage";
+import GraphPage from "./GraphPage";
 
 function App() {
   return (
@@ -20,9 +20,8 @@ function App() {
               </div>
             }
           />
-          <Route path="/graph" element={
-            <GraphPage></GraphPage>
-          } />
+          <Route path="/graph" element={<GraphPage></GraphPage>} />
+          <Route path="/signin" element={<SignIn></SignIn>} />
         </Routes>
       </BrowserRouter>
     </>
