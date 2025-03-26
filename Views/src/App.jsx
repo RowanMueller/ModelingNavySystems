@@ -3,6 +3,8 @@ import DragAndDrop from "./DragAndDrop";
 import { Toaster } from "react-hot-toast";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import GraphPage from "./GraphPage";
+import SignIn from "./signin";
+import SignUp from "./signup";
 
 function App() {
   return (
@@ -21,7 +23,8 @@ function App() {
             }
           />
           <Route path="/graph" element={<GraphPage></GraphPage>} />
-          <Route path="/signin" element={<SignIn></SignIn>} />
+          <Route path="/sign-in" element={<SignIn></SignIn>} />
+          <Route path="/sign-up" element={<SignUp></SignUp>} />
         </Routes>
       </BrowserRouter>
     </>
