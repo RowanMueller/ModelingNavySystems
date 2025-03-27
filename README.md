@@ -6,16 +6,18 @@
 - Node.js: can be installed [here](https://nodejs.org/en)
 
 ### run the app
-First time running, make sure you have the node modules installed
-```
-npm i
-```
-<hr>
-
 Make sure you are in the Views folder, can be achieved using
 ```
 cd Views
 ```
+
+First time running, make sure you have the node modules installed
+```
+npm i
+```
+
+<hr>
+
 To run the actual app:
 ```
 npm run dev
