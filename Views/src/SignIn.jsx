@@ -1,11 +1,15 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function SignIn() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
+  const navigate = useNavigate();
+
   const handleSignIn = async (credentials) => {
-    const response = await fetch("http://localhost:8000/api/token/", { //TODO: Update the URL
+    const response = await fetch("http://localhost:8000/api/token/", {
+      //TODO: Update the URL
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(credentials),
@@ -15,6 +19,7 @@ export default function SignIn() {
       const data = await response.json();
       localStorage.setItem("access_token", data.access);
       localStorage.setItem("refresh_token", data.refresh);
+      navigate("/dashboard");
     }
   };
 
