@@ -6,6 +6,7 @@ import GraphPage from "./GraphPage";
 import SignIn from "./signin";
 import SignUp from "./signup";
 import { AuthProvider } from "./authContext";
+import { ProtectedRoute } from "./ProtectedRoute";
 
 function App() {
   return (
@@ -17,14 +18,23 @@ function App() {
             <Route
               path="/upload"
               element={
-                <div className="flex flex-col items-center justify-center w-screen h-screen">
-                  <div className="flex flex-col items-center justify-center w-full max-w-lg">
-                    <DragAndDrop></DragAndDrop>
+                <ProtectedRoute>
+                  <div className="flex flex-col items-center justify-center w-screen h-screen">
+                    <div className="flex flex-col items-center justify-center w-full max-w-lg">
+                      <DragAndDrop></DragAndDrop>
+                    </div>
                   </div>
-                </div>
+                </ProtectedRoute>
               }
             />
-            <Route path="/graph" element={<GraphPage></GraphPage>} />
+            <Route
+              path="/graph"
+              element={
+                <ProtectedRoute>
+                  <GraphPage></GraphPage>
+                </ProtectedRoute>
+              }
+            />
             <Route path="/sign-in" element={<SignIn></SignIn>} />
             <Route path="/sign-up" element={<SignUp></SignUp>} />
           </Routes>
