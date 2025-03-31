@@ -1,12 +1,14 @@
 import "./App.css";
-import DragAndDrop from "./DragAndDrop";
+import DragAndDrop from "./uploadPage/DragAndDrop";
 import { Toaster } from "react-hot-toast";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Download from "./Download";
 import GraphPage from "./GraphPage";
 import SignIn from "./signin";
 import SignUp from "./signup";
 import { AuthProvider } from "./authContext";
 import { ProtectedRoute } from "./ProtectedRoute";
+import UploadPage from "./uploadPage/UploadPage";
 
 function App() {
   return (
@@ -19,11 +21,7 @@ function App() {
               path="/upload"
               element={
                 <ProtectedRoute>
-                  <div className="flex flex-col items-center justify-center w-screen h-screen">
-                    <div className="flex flex-col items-center justify-center w-full max-w-lg">
-                      <DragAndDrop></DragAndDrop>
-                    </div>
-                  </div>
+                  <UploadPage></UploadPage>
                 </ProtectedRoute>
               }
             />
@@ -32,6 +30,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <GraphPage></GraphPage>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/download"
+              element={
+                <ProtectedRoute>
+                  <Download></Download>
                 </ProtectedRoute>
               }
             />
