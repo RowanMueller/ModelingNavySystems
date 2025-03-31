@@ -6,16 +6,18 @@
 - Node.js: can be installed [here](https://nodejs.org/en)
 
 ### run the app
-First time running, make sure you have the node modules installed
-```
-npm i
-```
-<hr>
-
 Make sure you are in the Views folder, can be achieved using
 ```
 cd Views
 ```
+
+First time running, make sure you have the node modules installed
+```
+npm i
+```
+
+<hr>
+
 To run the actual app:
 ```
 npm run dev
@@ -30,6 +32,7 @@ Please watch [this video](https://www.youtube.com/watch?v=t-uAgI-AUxc&t=260s) to
 Python: can be installed [here](https://www.python.org/downloads/)
 <hr>
 STRONGLY RECOMMENDED: Use a virtual environment to install the required packages. You can install it by running the following command (note, for macbook, you may need to use `python3` instead of `python`):
+
 ```
 python -m venv env
 ```
