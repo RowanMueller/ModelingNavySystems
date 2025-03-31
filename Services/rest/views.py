@@ -43,9 +43,17 @@ class FileUploadView(APIView):
             if file.name.endswith('.csv'):
                 df = pd.read_csv(file, encoding="utf-8")
             elif file.name.endswith('.xls') or file.name.endswith('.xlsx'):
-                df = pd.read_excel(file, encoding="utf-8")
+                print(f"Reading Excel file: {file.name}")
+                df = pd.read_excel(file)
+                pd.set_option('display.max_rows', None)
+                pd.set_option('display.max_columns', None)
+                print(df)
             elif file.name.endswith('.sysml'):
-                df = self.read_sysml(file, encoding="utf-8")
+                print(f"Reading SysML file: {file.name}")
+                df = self.read_sysml(file)
+                pd.set_option('display.max_rows', None)
+                pd.set_option('display.max_columns', None)
+                print(df)
             else:
                 return Response({
                     "error": "Invalid file format. Please upload a CSV or Excel file."
@@ -74,53 +82,52 @@ class FileUploadView(APIView):
             "files": uploaded_files
         }, status=status.HTTP_201_CREATED)
     
-    def read_sysml(self, file, encoding="utf-8"): # writes sysml file to pandas dataframe 
-        """Parses a .sysml file-like object and returns a pandas DataFrame."""
-        try:
-            data = file.read().decode('utf-8') # Important: Read the file content
-            # Extract all device data blocks using regular expressions
-            device_blocks = re.findall(r"part instance (\w+) {\s*(.*?)\s*}", data, re.DOTALL)
+    def read_sysml(self, file):
+        # Read and decode the SysML file
+        # Column mapping to convet sysml names to proper Django names: 
+        COLUMN_MAPPING = {
+            "assetId": "Asset Identifier",
+            "manufacturer": "Manufacturer",
+            "modelNumber": "Model Number",
+            "name": "Asset Name",
+            "serialNumber": "Serial Number",
+            "comments": "Comments",
+            "assetCost": "Asset Cost Amount",
+            "netBookValue": "Net Book Value Amount",
+            "ownership": "Ownership",
+            "inventoryDate": "Inventory Date",
+            "datePlacedInService": "Date Placed In Service",
+            "usefulLife": "Useful Life Periods",
+            "assetType": "Asset Type"
+        }
 
-            if not device_blocks:
-                print("Error: No 'part instance' blocks found in the file.")
-                return pd.DataFrame()
+        sysml_content = file.read().decode('utf-8')
 
-            dataframes = []  # Store DataFrames for each device
-            for device_name, attributes_block in device_blocks:
-                attributes = {}
-                for line in attributes_block.strip().split(";\n"):
-                    line = line.strip()
-                    if not line or line.startswith("//"):  # Skip empty lines and comments
-                        continue
+        # Extract part instances using regex
+        part_instance_pattern = r"part instance ([\w\-]+)\s*{([^}]+)}"
+        matches = re.findall(part_instance_pattern, sysml_content)
 
-                    # Handle connections specially
-                    if "connections = [" in line:
-                        match_connection = re.search(r"connections = \[(.*?)\]", line)
-                        if match_connection:
-                            attributes["connections"] = match_connection.group(1).strip()
-                        continue
+        part_instances = []
 
-                    # Regular attribute-value pairs
-                    parts = line.split("=", 1)
-                    if len(parts) == 2:
-                        attribute = parts[0].strip()
-                        value = parts[1].strip().replace('"', '')  # remove quotes
-                        attributes[attribute] = value
-                    else:
-                        print(f"Warning: Could not parse line: {line}")
+        for part_name, attributes in matches:
+            part_data = {"PartName": part_name}
 
-                # Create a DataFrame for the current device
-                df = pd.DataFrame([attributes])
-                df['device_name'] = device_name  # Add device_name as column
-                dataframes.append(df)
+            for line in attributes.splitlines():
+                if '=' in line:
+                    field_name, field_value = line.split('=', 1)
+                    field_name = field_name.strip()
+                    field_value = field_value.strip().strip('"')
 
-            # Concatenate all DataFrames into a single DataFrame
-            if dataframes:
-                final_df = pd.concat(dataframes, ignore_index=True)
-                return final_df
-            else:
-                return pd.DataFrame()
+                    # Store using the correct column name if available
+                    mapped_name = COLUMN_MAPPING.get(field_name, field_name)
+                    part_data[mapped_name] = field_value
 
-        except Exception as e:
-            print(f"An error occurred during parsing: {e}")
-            raise e  # Re-raise the exception to be caught in the API view
+            part_instances.append(part_data)
+
+        # Create a pandas DataFrame with renamed columns
+        df = pd.DataFrame(part_instances)
+
+        # Fill missing values with an empty string
+        df = df.fillna('')
+
+        return df

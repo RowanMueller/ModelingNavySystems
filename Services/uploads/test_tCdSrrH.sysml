@@ -1,8 +1,7 @@
 package Devices {
     
     part def Device {
-        attribute AssetId: String?;
-        attribute Manufacturer: String?;
+        property componentName : string; 
         attribute ModelNumber: String?;
         attribute AssetName: String?;
         attribute SerialNumber: String?;
@@ -17,7 +16,7 @@ package Devices {
         attribute additionalAsJson: Json?;
 
         // Relationships
-        part connections: DeviceConnection[*];  // A device can have multiple connections
+        part connections: DeviceConnection [0..*];  // A device can have multiple connections
     }
 
     // Define the connection between devices
@@ -40,40 +39,29 @@ package Devices {
         part device2: Device;
     }
     // Example of Device instances with attributes filled in
-    part instance Device1 {
-        name = "Laptop A";
-        assetId = "A1234";
-        manufacturer = "Dell";
-        modelNumber = "XPS 15";
-        assetType = "Laptop";
-        serialNumber = "SN123456789";
-        
-        // Connection to another device (e.g., connected to a monitor via HDMI)
-        connections = [ 
-            instance DeviceConnection1;
-        ];
+    part instance 2f0b0068-b300-47d9-8849-2e8a0aab90b1{
+        name = "Oven";
+        assetId = "E843415";
+        manufacturer = "TOBII";
+        modelNumber = "LEGEND XTR";
+        assetName = "Eye Tracking System";
+        assetCostAmount = 18065;
+        netBookValueAmount = 13731.46; 
+        ownership = "11 UVA Owned";
+        inventoryDate = "06/14/2022";
+        datePlacedInService = "3/25/2022";
+        usefulLifePeriods = 36;
+        assetType = "566 Printer/Plotter";
+        locationID = "Olsson Hall";
     }
 
-    part instance Device2 {
+    part instance 985cbc27-0259-4027-91e5-0529896675ed {
         name = "Monitor X";
         assetId = "B5678";
         manufacturer = "Samsung";
         modelNumber = "U28E590D";
         assetType = "Monitor";
         serialNumber = "SN987654321";
-        
-        // Connection to the laptop
-        connections = [ 
-            instance DeviceConnection1;
-        ];
-    }
-
-    // Connection instance between Device1 and Device2 (Laptop and Monitor)
-    part instance DeviceConnection1 {
-        connectionType = "HDMI";
-        description = "Connection between Laptop A and Monitor X via HDMI";
-        device1 = Device1;
-        device2 = Device2;
     }
 }
 
