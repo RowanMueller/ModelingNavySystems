@@ -3,6 +3,7 @@ import DragAndDrop from "./dragAndDrop";
 import { Toaster } from "react-hot-toast";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import GraphPage from "./graphPage";
+import Download from "./Download";
 
 function App() {
   return (
@@ -20,9 +21,8 @@ function App() {
               </div>
             }
           />
-          <Route path="/graph" element={
-            <GraphPage></GraphPage>
-          } />
+          <Route path="/graph" element={<GraphPage></GraphPage>} />
+          <Route path="/download" element={<Download></Download>} />
         </Routes>
       </BrowserRouter>
     </>
