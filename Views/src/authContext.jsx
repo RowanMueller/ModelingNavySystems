@@ -14,14 +14,23 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const verifyToken = async (token) => {
-    const response = await fetch("http://localhost:8000/api/protected/", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/auth/verify/", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ token })
+      });
 
-    if (response.ok) {
-      // set your user info accordingly - here we use a simple flag
-      setUser({ loggedIn: true });
-    } else {
+      if (response.ok) {
+        const data = await response.json();
+        setUser({ loggedIn: true, ...data });
+      } else {
+        refreshAccessToken();
+      }
+    } catch (error) {
+      console.error('Token verification failed:', error);
       refreshAccessToken();
     }
   };
@@ -30,23 +39,27 @@ export const AuthProvider = ({ children }) => {
     const refresh = localStorage.getItem("refresh_token");
     if (!refresh) return logout();
 
-    const response = await fetch("http://localhost:8000/api/token/refresh/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh }),
-    });
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/auth/refresh/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh }),
+      });
 
-    if (response.ok) {
-      const data = await response.json();
-      localStorage.setItem("access_token", data.access);
-      verifyToken(data.access);
-    } else {
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem("access_token", data.access);
+        verifyToken(data.access);
+      } else {
+        logout();
+      }
+    } catch (error) {
+      console.error('Token refresh failed:', error);
       logout();
     }
   };
 
   const login = (data) => {
-    // assuming data contains both tokens, and possibly more user info
     localStorage.setItem("access_token", data.access);
     localStorage.setItem("refresh_token", data.refresh);
     setUser({ loggedIn: true, ...data.user });
