@@ -4,40 +4,46 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // checks if there is an access token when the provider mounts
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (token) {
-      verifyToken(token);
-    }
-  }, []);
+    const initializeAuth = async () => {
+      const token = localStorage.getItem("access_token");
+      if (token) {
+        try {
+          const response = await fetch("http://localhost:8000/api/v1/auth/verify/", {
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ token })
+          });
 
-  const verifyToken = async (token) => {
-    try {
-      const response = await fetch("http://localhost:8000/api/v1/auth/verify/", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ token })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUser({ loggedIn: true, ...data });
-      } else {
-        refreshAccessToken();
+          if (response.ok) {
+            // If token is valid, set the user state
+            setUser({ loggedIn: true });
+          } else {
+            // If token is invalid, try to refresh it
+            await refreshAccessToken();
+          }
+        } catch (error) {
+          console.error('Token verification failed:', error);
+          await refreshAccessToken();
+        }
       }
-    } catch (error) {
-      console.error('Token verification failed:', error);
-      refreshAccessToken();
-    }
-  };
+      setLoading(false);
+    };
+
+    initializeAuth();
+  }, []);
 
   const refreshAccessToken = async () => {
     const refresh = localStorage.getItem("refresh_token");
-    if (!refresh) return logout();
+    if (!refresh) {
+      logout();
+      return false;
+    }
 
     try {
       const response = await fetch("http://localhost:8000/api/v1/auth/refresh/", {
@@ -49,17 +55,27 @@ export const AuthProvider = ({ children }) => {
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem("access_token", data.access);
-        verifyToken(data.access);
+        setUser({ loggedIn: true });
+        return true;
       } else {
         logout();
+        return false;
       }
     } catch (error) {
       console.error('Token refresh failed:', error);
       logout();
+      return false;
     }
   };
 
   const login = (data) => {
+    console.log('Login data received:', { ...data, access: 'HIDDEN', refresh: 'HIDDEN' });
+    
+    if (!data.access || !data.refresh) {
+      console.error('Missing tokens in login data');
+      return;
+    }
+
     localStorage.setItem("access_token", data.access);
     localStorage.setItem("refresh_token", data.refresh);
     setUser({ loggedIn: true, ...data.user });
@@ -71,8 +87,12 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, refreshAccessToken }}>
       {children}
     </AuthContext.Provider>
   );

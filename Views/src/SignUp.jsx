@@ -32,19 +32,31 @@ export default function SignUp() {
       });
 
       const data = await response.json();
+      console.log('Registration response:', { 
+        ...data, 
+        access: data.access ? 'HIDDEN' : undefined,
+        user: data.user ? { ...data.user, password: 'HIDDEN' } : undefined
+      });
 
       if (response.ok) {
+        if (!data.access || !data.refresh) {
+          setError("Invalid response from server: missing tokens");
+          return;
+        }
         login(data);
-        navigate("/dashboard");
+        navigate("/upload");
       } else {
-        setError(
+        const errorMessage = 
           data.username?.[0] || 
           data.email?.[0] || 
-          data.password?.[0] || 
-          "Registration failed"
-        );
+          data.password?.[0] ||
+          data.error ||
+          data.detail ||
+          "Registration failed";
+        setError(errorMessage);
       }
     } catch (err) {
+      console.error('Registration error:', err);
       setError("An error occurred during registration");
     }
   };

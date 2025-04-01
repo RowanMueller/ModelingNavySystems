@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "./authContext";
 
 export default function SignIn() {
@@ -7,6 +7,7 @@ export default function SignIn() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
 
   const handleSubmit = async (e) => {
@@ -21,14 +22,22 @@ export default function SignIn() {
       });
 
       const data = await response.json();
+      console.log('Login response:', { ...data, access: data.access ? 'HIDDEN' : undefined });
 
       if (response.ok) {
+        if (!data.access || !data.refresh) {
+          setError("Invalid response from server: missing tokens");
+          return;
+        }
         login(data);
-        navigate("/dashboard");
+        // Navigate to the attempted page or default to /upload
+        const from = location.state?.from?.pathname || "/upload";
+        navigate(from, { replace: true });
       } else {
-        setError(data.error || "Login failed");
+        setError(data.error || data.detail || "Login failed");
       }
     } catch (err) {
+      console.error('Login error:', err);
       setError("An error occurred during login");
     }
   };
