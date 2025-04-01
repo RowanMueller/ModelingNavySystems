@@ -1,5 +1,4 @@
 import "./App.css";
-import DragAndDrop from "./uploadPage/DragAndDrop";
 import { Toaster } from "react-hot-toast";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Download from "./Download";
