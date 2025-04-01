@@ -17,6 +17,8 @@ class DeviceListCreate(generics.ListCreateAPIView):
     queryset = Device.objects.all()
     serializer_class = DeviceSerializer
 
+
+# Fetches devices and converts to JSON
 class GetAllDevices(APIView):
     def get(self, request, *args, **kwargs):
         devices = Device.objects.all()
@@ -24,6 +26,7 @@ class GetAllDevices(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+# connects to urls.py
 class FileUploadView(APIView):
     def post(self, request, *args, **kwargs):
         if 'files' not in request.FILES:
