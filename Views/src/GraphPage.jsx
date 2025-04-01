@@ -18,16 +18,16 @@ const initialNodes = [
 ];
 const initialEdges = [{ id: "e1-2", source: "1", target: "2" }];
 
-type Node = {
-  id: string;
-  position: { x: number; y: number };
-  data: { label: string };
-};
+// type Node = {
+//   id: string;
+//   position: { x: number; y: number };
+//   data: { label: string };
+// };
 
 export default function GraphPage() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-  const [flowInstance, setFlowInstance] = useState<any>(null);
+  const [flowInstance, setFlowInstance] = useState(null);
 
   const onConnect = useCallback(
     (params) => setEdges((eds) => addEdge(params, eds)),
@@ -36,7 +36,7 @@ export default function GraphPage() {
 
   useEffect(() => {
     axios.get("http://localhost:8000/api/v1/get-devices/").then((res) => {
-      const newNodes = res.data.map((node: any, i: number) => {
+      const newNodes = res.data.map((node, i) => {
         return {
           id: String(i + 1),
           position: { x: 0, y: 100 * (i + 1) },
