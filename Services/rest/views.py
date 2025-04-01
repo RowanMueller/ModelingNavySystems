@@ -14,10 +14,12 @@ import os
 # Create your views here.
 
 class DeviceListCreate(generics.ListCreateAPIView):
+    # 
     queryset = Device.objects.all()
     serializer_class = DeviceSerializer
 
 class GetAllDevices(APIView):
+    # Custom API view to fetch all devices
     def get(self, request, *args, **kwargs):
         devices = Device.objects.all()
         serializer = DeviceSerializer(devices, many=True)
@@ -31,6 +33,7 @@ class FileUploadView(APIView):
 
         uploaded_files = []
         for file in request.FILES.getlist('files'):  # Handle multiple files
+            # Saves each file under 'uploads/' directory
             file_path = default_storage.save(f"uploads/{file.name}", ContentFile(file.read()))
             uploaded_files.append({
                 "file_name": file.name,
@@ -39,8 +42,10 @@ class FileUploadView(APIView):
             })
             
         for file in request.FILES.getlist('files'):
+            #extract data and save to the Device model
             file.seek(0)
             if file.name.endswith('.csv'):
+                # Reads CSV file into a pandas
                 df = pd.read_csv(file, encoding="utf-8")
             elif file.name.endswith('.xls') or file.name.endswith('.xlsx'):
                 df = pd.read_excel(file, encoding="utf-8")
