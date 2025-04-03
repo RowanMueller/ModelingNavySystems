@@ -23,6 +23,10 @@ To run the actual app:
 npm run dev
 ```
 
+Login credentials:
+- Username: example
+- Password: 123456
+
 ## Backend (Django)
 
 Please watch [this video](https://www.youtube.com/watch?v=t-uAgI-AUxc&t=260s) to understand how django rest framework works.
