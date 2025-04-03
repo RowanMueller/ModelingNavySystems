@@ -38,31 +38,27 @@ package Devices {
         part device1: Device;
         part device2: Device;
     }
-    // Example of Device instances with attributes filled in
-    part instance 2f0b0068-b300-47d9-8849-2e8a0aab90b1{
-        name = "Oven";
-        assetId = "E843415";
-        manufacturer = "TOBII";
-        modelNumber = "LEGEND XTR";
-        assetName = "Eye Tracking System";
-        assetCostAmount = 18065;
-        netBookValueAmount = 13731.46; 
-        ownership = "11 UVA Owned";
-        inventoryDate = "06/14/2022";
-        datePlacedInService = "3/25/2022";
-        usefulLifePeriods = 36;
-        assetType = "566 Printer/Plotter";
-        locationID = "Olsson Hall";
-        test: "55";
-    }
 
-    part instance 985cbc27-0259-4027-91e5-0529896675ed {
-        name = "Monitor X";
-        assetId = "B5678";
-        manufacturer = "Samsung";
-        modelNumber = "U28E590D";
-        assetType = "Monitor";
-        serialNumber = "SN987654321";
+    part instance 2f0b0068-b300-47d9-8849-2e8a0aab90b1{
+        assetIdentifier = "77020";
+        manufacturer = "TECHNICAL MFG CO.";
+        modelNumber = "77A-440-02";
+        assetName = "TABLE W/VIBRATION ISOLATION SYSTEM";
+        serialNumber = "2001238";
+        comments = "S. RAY TAYLOR";
+        assetCostAmount = 5460.37;
+        netBookValueAmount = 0; 
+        ownership = "11 UVA Owned";
+        inventoryDate = "#########";
+        datePlacedInService = "9/24/1997";
+        usefulLifePeriods = 120;
+        assetType = "562 Other Lab Equipment";
+        oldTagNumber = "77020";
+        locationID = "FM_0270_03_362";
+        buildingName = "304 Research Lab";
+        buildingNumber = "BL0270";
+        floor = "03";
+        roomNumber = "362";
     }
 }
 

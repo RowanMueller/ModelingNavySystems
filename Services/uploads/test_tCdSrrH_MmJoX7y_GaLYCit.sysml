@@ -53,7 +53,7 @@ package Devices {
         usefulLifePeriods = 36;
         assetType = "566 Printer/Plotter";
         locationID = "Olsson Hall";
-        test: "55";
+        test: "55"
     }
 
     part instance 985cbc27-0259-4027-91e5-0529896675ed {

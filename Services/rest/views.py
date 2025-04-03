@@ -45,14 +45,9 @@ class FileUploadView(APIView):
             elif file.name.endswith('.xls') or file.name.endswith('.xlsx'):
                 print(f"Reading Excel file: {file.name}")
                 df = pd.read_excel(file)
-                pd.set_option('display.max_rows', None)
-                pd.set_option('display.max_columns', None)
-                print(df)
             elif file.name.endswith('.sysml'):
                 print(f"Reading SysML file: {file.name}")
                 df = self.read_sysml(file)
-                pd.set_option('display.max_rows', None)
-                pd.set_option('display.max_columns', None)
                 print(df)
             else:
                 return Response({
@@ -74,6 +69,12 @@ class FileUploadView(APIView):
                     DatePlacedInService=row.get('Date Placed In Service'),
                     UsefulLifePeriods=row.get('Useful Life Periods'),
                     AssetType=row.get('Asset Type'),
+                    LocationID=row.get('Location ID'), 
+                    BuildingNumber=row.get('Building Number'), 
+                    BuildingName=row.get('Building Name'), 
+                    Floor=row.get('Floor'),
+                    RoomNumber=row.get('Room Number'), 
+                    AdditionalAsJson=row.get('Additional JSON')
                 )
                 device.save()
 
@@ -84,21 +85,26 @@ class FileUploadView(APIView):
     
     def read_sysml(self, file):
         # Read and decode the SysML file
-        # Column mapping to convet sysml names to proper Django names: 
+        # Column mapping to convert SysML names to proper Django names: YOU HAVE TO CHANGE THIS EVERY TIME YOU CHANGE THE MODEL
         COLUMN_MAPPING = {
-            "assetId": "Asset Identifier",
+            "assetIdentifier": "Asset Identifier",
             "manufacturer": "Manufacturer",
             "modelNumber": "Model Number",
-            "name": "Asset Name",
             "serialNumber": "Serial Number",
             "comments": "Comments",
             "assetCost": "Asset Cost Amount",
-            "netBookValue": "Net Book Value Amount",
+            "netBookValueAmount": "Net Book Value Amount",
             "ownership": "Ownership",
             "inventoryDate": "Inventory Date",
             "datePlacedInService": "Date Placed In Service",
             "usefulLife": "Useful Life Periods",
-            "assetType": "Asset Type"
+            "assetType": "Asset Type", 
+            "assetName": "Asset Name",
+            "locationID": "Location ID",
+            "buildingNumber": "Building Number",
+            "buildingName": "Building Name",
+            "floor": "Floor",
+            "roomNumber": "Room Number",
         }
 
         sysml_content = file.read().decode('utf-8')
@@ -111,6 +117,7 @@ class FileUploadView(APIView):
 
         for part_name, attributes in matches:
             part_data = {"PartName": part_name}
+            additional_data = {}
 
             for line in attributes.splitlines():
                 if '=' in line:
@@ -119,8 +126,15 @@ class FileUploadView(APIView):
                     field_value = field_value.strip().strip('"')
 
                     # Store using the correct column name if available
-                    mapped_name = COLUMN_MAPPING.get(field_name, field_name)
-                    part_data[mapped_name] = field_value
+                    if field_name in COLUMN_MAPPING:
+                        mapped_name = COLUMN_MAPPING[field_name]
+                        part_data[mapped_name] = field_value
+                    else:
+                        # Store unmapped fields in additional_data
+                        additional_data[field_name] = field_value
+
+            # Add additional data as JSON string
+            part_data["Additional JSON"] = additional_data
 
             part_instances.append(part_data)
 
