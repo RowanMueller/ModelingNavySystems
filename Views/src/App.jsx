@@ -1,10 +1,11 @@
 import "./App.css";
 import { Toaster } from "react-hot-toast";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Download from "./Download";
 import GraphPage from "./GraphPage";
-import SignIn from "./signin";
-import SignUp from "./signup";
+import SignIn from "./SignIn";
+import SignUp from "./SignUp";
+import Dashboard from "./Dashboard";
 import { AuthProvider } from "./authContext";
 import { ProtectedRoute } from "./ProtectedRoute";
 import UploadPage from "./uploadPage/UploadPage";
@@ -16,11 +17,20 @@ function App() {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/upload"
               element={
                 <ProtectedRoute>
-                  <UploadPage></UploadPage>
+                  <UploadPage />
                 </ProtectedRoute>
               }
             />
@@ -28,7 +38,7 @@ function App() {
               path="/graph"
               element={
                 <ProtectedRoute>
-                  <GraphPage></GraphPage>
+                  <GraphPage />
                 </ProtectedRoute>
               }
             />
@@ -36,12 +46,12 @@ function App() {
               path="/download"
               element={
                 <ProtectedRoute>
-                  <Download></Download>
+                  <Download />
                 </ProtectedRoute>
               }
             />
-            <Route path="/sign-in" element={<SignIn></SignIn>} />
-            <Route path="/sign-up" element={<SignUp></SignUp>} />
+            <Route path="/sign-in" element={<SignIn />} />
+            <Route path="/sign-up" element={<SignUp />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
