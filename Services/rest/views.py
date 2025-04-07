@@ -48,7 +48,7 @@ class FileUploadView(APIView):
             #extract data and save to the Device model
             file.seek(0)
             if file.name.endswith('.csv'):
-                # Reads CSV file into a pandas
+                # Reads CSV file into a pandas dataframe
                 df = pd.read_csv(file, encoding="utf-8")
             elif file.name.endswith('.xls') or file.name.endswith('.xlsx'):
                 print(f"Reading Excel file: {file.name}")
