@@ -10,13 +10,16 @@ from django.db import models
 
 class System(models.Model):
     Name = models.CharField(max_length=100)
-    Users = models.ManyToManyField(User, related_name="systems")
+    User = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="systems", null=True
+    )
     EdgeCount = models.IntegerField(default=0)
     NodeCount = models.IntegerField(default=0)
     Version = models.JSONField(null=True, blank=True)  # {"1": timestamp}
 
     def __str__(self):
         return f"{self.AssetId} - {self.AssetName}"
+
 
 # description: model below is too difficult and fail to handle cascading delete
 # class Update (models.Model):
@@ -73,9 +76,7 @@ class Device(models.Model):
     Floor = models.CharField(max_length=100, null=True, blank=True)
     RoomNumber = models.CharField(max_length=100, null=True, blank=True)
     AdditionalAsJson = models.JSONField(null=True, blank=True)
-    system = models.ForeignKey(
-        System, on_delete=models.CASCADE, related_name="devices"
-    )
+    system = models.ForeignKey(System, on_delete=models.CASCADE, related_name="devices")
 
     def __str__(self):
         return f"{self.AssetId} - {self.AssetName}"
