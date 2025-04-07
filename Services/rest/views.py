@@ -91,7 +91,7 @@ class FileUploadView(APIView):
             "files": uploaded_files
         }, status=status.HTTP_201_CREATED)
     
-    def read_sysml(self, file):
+    def read_sysml(self, file): #TODO have it so it parses data when it's on the next line 
         # Read and decode the SysML file
         # Column mapping to convert SysML names to proper Django names: YOU HAVE TO CHANGE THIS EVERY TIME YOU CHANGE THE MODEL
         COLUMN_MAPPING = {
