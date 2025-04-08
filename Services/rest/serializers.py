@@ -1,9 +1,13 @@
 from rest_framework import serializers
-from .models import Device
+from .models import Device, Connection
 
 class DeviceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Device
         fields = '__all__'
-        
-        
+
+
+class ConnectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Connection
+        fields = '__all__'
