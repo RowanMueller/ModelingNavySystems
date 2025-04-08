@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./authContext";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, LogOut } from "lucide-react";
 export default function Dashboard() {
   const [systems, setSystems] = useState([
     {
@@ -9,57 +9,57 @@ export default function Dashboard() {
       name: "System 1",
       total_nodes: 10,
       total_edges: 10,
-      preview_image: "https://via.placeholder.com/150"
+      preview_image: "https://via.placeholder.com/150",
     },
     {
       id: 2,
       name: "System 2",
       total_nodes: 10,
       total_edges: 10,
-      preview_image: "https://via.placeholder.com/150"
+      preview_image: "https://via.placeholder.com/150",
     },
     {
       id: 3,
       name: "System 3",
       total_nodes: 10,
       total_edges: 10,
-      preview_image: "https://via.placeholder.com/150"
+      preview_image: "https://via.placeholder.com/150",
     },
     {
       id: 4,
       name: "System 4",
       total_nodes: 10,
       total_edges: 10,
-      preview_image: "https://via.placeholder.com/150"
+      preview_image: "https://via.placeholder.com/150",
     },
     {
       id: 5,
       name: "System 5",
       total_nodes: 10,
       total_edges: 10,
-      preview_image: "https://via.placeholder.com/150"
+      preview_image: "https://via.placeholder.com/150",
     },
     {
       id: 6,
       name: "System 6",
       total_nodes: 10,
       total_edges: 10,
-      preview_image: "https://via.placeholder.com/150"
+      preview_image: "https://via.placeholder.com/150",
     },
     {
       id: 7,
       name: "System 7",
       total_nodes: 10,
       total_edges: 10,
-      preview_image: "https://via.placeholder.com/150"
+      preview_image: "https://via.placeholder.com/150",
     },
     {
       id: 8,
       name: "System 8",
       total_nodes: 10,
       total_edges: 10,
-      preview_image: "https://via.placeholder.com/150"
-    }
+      preview_image: "https://via.placeholder.com/150",
+    },
   ]);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
@@ -87,7 +87,11 @@ export default function Dashboard() {
   };
 
   const SystemCard = ({ system }) => (
-    <div className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
+      onClick={() => {
+        navigate(`/system/${system.id}`);
+      }}
+    >
       <h3 className="text-xl font-semibold text-gray-800 mb-4">
         {system.name}
       </h3>
@@ -136,6 +140,19 @@ export default function Dashboard() {
             >
               <Plus />
               <span className="ml-2">New System</span>
+            </button>
+          </div>
+          <div className="flex items-center space-x-4">
+            <button
+              className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors flex items-center"
+              onClick={() => {
+                localStorage.removeItem("access_token");
+                localStorage.removeItem("refresh_token");
+                navigate("/sign-in");
+              }}
+            >
+              <LogOut />
+              <span className="ml-2">Logout</span>
             </button>
           </div>
         </div>

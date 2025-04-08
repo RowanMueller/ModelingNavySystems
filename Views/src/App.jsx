@@ -27,18 +27,18 @@ function App() {
               }
             />
             <Route
-              path="/upload"
+              path="/system/:id"
               element={
                 <ProtectedRoute>
-                  <UploadPage />
+                  <GraphPage />
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/graph"
+              path="/upload"
               element={
                 <ProtectedRoute>
-                  <GraphPage />
+                  <UploadPage />
                 </ProtectedRoute>
               }
             />
