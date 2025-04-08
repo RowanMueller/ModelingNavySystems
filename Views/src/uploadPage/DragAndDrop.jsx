@@ -23,6 +23,7 @@ export default function DragAndDrop() {
         ".xlsx",
       ],
       "application/vnd.ms-excel": [".xls"],
+      "text/plain": [".sysml"],
     },
     multiple: true,
   });

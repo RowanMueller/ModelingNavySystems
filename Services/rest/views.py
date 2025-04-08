@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
-
+import re
 import pandas as pd
 import os
 
@@ -48,10 +48,15 @@ class FileUploadView(APIView):
             #extract data and save to the Device model
             file.seek(0)
             if file.name.endswith('.csv'):
-                # Reads CSV file into a pandas
+                # Reads CSV file into a pandas dataframe
                 df = pd.read_csv(file, encoding="utf-8")
             elif file.name.endswith('.xls') or file.name.endswith('.xlsx'):
-                df = pd.read_excel(file, encoding="utf-8")
+                print(f"Reading Excel file: {file.name}")
+                df = pd.read_excel(file)
+            elif file.name.endswith('.sysml'):
+                print(f"Reading SysML file: {file.name}")
+                df = self.read_sysml(file)
+                print(df)
             else:
                 return Response({
                     "error": "Invalid file format. Please upload a CSV or Excel file."
@@ -72,6 +77,12 @@ class FileUploadView(APIView):
                     DatePlacedInService=row.get('Date Placed In Service'),
                     UsefulLifePeriods=row.get('Useful Life Periods'),
                     AssetType=row.get('Asset Type'),
+                    LocationID=row.get('Location ID'), 
+                    BuildingNumber=row.get('Building Number'), 
+                    BuildingName=row.get('Building Name'), 
+                    Floor=row.get('Floor'),
+                    RoomNumber=row.get('Room Number'), 
+                    AdditionalAsJson=row.get('Additional JSON')
                 )
                 device.save()
 
@@ -79,3 +90,66 @@ class FileUploadView(APIView):
             "message": "Files uploaded successfully",
             "files": uploaded_files
         }, status=status.HTTP_201_CREATED)
+    
+    def read_sysml(self, file): #TODO have it so it parses data when it's on the next line 
+        # Read and decode the SysML file
+        # Column mapping to convert SysML names to proper Django names: YOU HAVE TO CHANGE THIS EVERY TIME YOU CHANGE THE MODEL
+        COLUMN_MAPPING = {
+            "assetIdentifier": "Asset Identifier",
+            "manufacturer": "Manufacturer",
+            "modelNumber": "Model Number",
+            "serialNumber": "Serial Number",
+            "comments": "Comments",
+            "assetCost": "Asset Cost Amount",
+            "netBookValueAmount": "Net Book Value Amount",
+            "ownership": "Ownership",
+            "inventoryDate": "Inventory Date",
+            "datePlacedInService": "Date Placed In Service",
+            "usefulLife": "Useful Life Periods",
+            "assetType": "Asset Type", 
+            "assetName": "Asset Name",
+            "locationID": "Location ID",
+            "buildingNumber": "Building Number",
+            "buildingName": "Building Name",
+            "floor": "Floor",
+            "roomNumber": "Room Number",
+        }
+
+        sysml_content = file.read().decode('utf-8')
+
+        # Extract part instances using regex
+        part_instance_pattern = r"part instance ([\w\-]+)\s*{([^}]+)}"
+        matches = re.findall(part_instance_pattern, sysml_content)
+
+        part_instances = []
+
+        for part_name, attributes in matches:
+            part_data = {"PartName": part_name}
+            additional_data = {}
+
+            for line in attributes.splitlines():
+                if '=' in line:
+                    field_name, field_value = line.split('=', 1)
+                    field_name = field_name.strip()
+                    field_value = field_value.strip().strip('"')
+
+                    # Store using the correct column name if available
+                    if field_name in COLUMN_MAPPING:
+                        mapped_name = COLUMN_MAPPING[field_name]
+                        part_data[mapped_name] = field_value
+                    else:
+                        # Store unmapped fields in additional_data
+                        additional_data[field_name] = field_value
+
+            # Add additional data as JSON string
+            part_data["Additional JSON"] = additional_data
+
+            part_instances.append(part_data)
+
+        # Create a pandas DataFrame with renamed columns
+        df = pd.DataFrame(part_instances)
+
+        # Fill missing values with an empty string
+        df = df.fillna('')
+
+        return df
