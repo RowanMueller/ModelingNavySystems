@@ -14,8 +14,10 @@ export default function SignIn() {
     e.preventDefault();
     setError("");
     
+    console.log(import.meta.env.VITE_BASE_URL);
+
     try {
-      const response = await fetch("http://localhost:8000/api/v1/login/", {
+      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/api/v1/login/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
