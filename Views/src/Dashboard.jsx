@@ -71,7 +71,7 @@ export default function Dashboard() {
 
   const fetchSystems = async () => {
     // try {
-    //   const response = await fetch('http://localhost:8000/api/v1/systems/', {
+    //   const response = await fetch(`${import.meta.env.VITE_BASE_URL}/api/v1/systems/`, {
     //     headers: {
     //       'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
     //       'Content-Type': 'application/json',
@@ -135,7 +135,7 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => navigate("/new-system")}
+              onClick={() => navigate("/upload")}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center"
             >
               <Plus />
