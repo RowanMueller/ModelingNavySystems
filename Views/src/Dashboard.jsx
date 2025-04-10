@@ -70,24 +70,28 @@ export default function Dashboard() {
   }, []);
 
   const fetchSystems = async () => {
-    // try {
-    //   const response = await fetch(`${import.meta.env.VITE_BASE_URL}/api/v1/systems/`, {
-    //     headers: {
-    //       'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-    //       'Content-Type': 'application/json',
-    //     },
-    //   });
-    //   if (response.ok) {
-    //     const data = await response.json();
-    //     setSystems(data);
-    //   }
-    // } catch (error) {
-    //   console.error('Error fetching systems:', error);
-    // }
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}/api/v1/getSystems/`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          },
+        }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setSystems(data);
+      }
+    } catch (error) {
+      console.error("Error fetching systems:", error);
+    }
   };
 
   const SystemCard = ({ system }) => (
-    <div className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
+    <div
+      className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
       onClick={() => {
         navigate(`/system/${system.id}`);
       }}

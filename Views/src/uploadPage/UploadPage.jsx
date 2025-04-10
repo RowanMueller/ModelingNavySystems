@@ -30,6 +30,31 @@ export default function UploadPage() {
     multiple: true,
   });
 
+  const [files, setFiles] = useState([]);
+  const [systemName, setSystemName] = useState("");
+  const navigate = useNavigate();
+  const onDrop = useCallback((acceptedFiles) => {
+    setFiles((prevFiles) => [...prevFiles, ...acceptedFiles]);
+  }, []);
+
+  const removeFile = (fileName) => {
+    setFiles((prevFiles) => prevFiles.filter((file) => file.name !== fileName));
+  };
+
+  // setting appropriate file types that can be uploaded
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      "text/csv": [".csv"],
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
+        ".xlsx",
+      ],
+      "application/vnd.ms-excel": [".xls"],
+      "text/plain": [".sysml"],
+    },
+    multiple: true,
+  });
+
   return (
     <div className="flex flex-col items-center justify-center w-screen h-screen">
       <div className="flex flex-col items-center justify-center w-full max-w-lg">
