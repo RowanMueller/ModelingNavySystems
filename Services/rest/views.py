@@ -1,15 +1,17 @@
 from django.shortcuts import render
 from rest_framework import generics
-from .models import Device
-from .serializers import DeviceSerializer
+from .models import Device, System 
+from .serializers import DeviceSerializer, SystemSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 import re
+from rest_framework.permissions import IsAuthenticated
 import pandas as pd
 import os
+from django.contrib.auth.models import User
 
 # Create your views here.
 
@@ -18,7 +20,6 @@ class DeviceListCreate(generics.ListCreateAPIView):
     queryset = Device.objects.all()
     serializer_class = DeviceSerializer
 
-
 # Fetches devices and converts to JSON
 class GetAllDevices(APIView):
     # Custom API view to fetch all devices
@@ -26,7 +27,6 @@ class GetAllDevices(APIView):
         devices = Device.objects.all()
         serializer = DeviceSerializer(devices, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 # connects to urls.py
 class FileUploadView(APIView):
@@ -153,3 +153,46 @@ class FileUploadView(APIView):
         df = df.fillna('')
 
         return df
+
+class GetAllSystems(APIView):
+    def get(self, request, *args, **kwargs):
+        user_id = request.query_params.get("user_id")
+        if not user_id:
+            return Response({"error": "Missing user_id"}, status=status.HTTP_400_BAD_REQUEST)
+
+        systems = System.objects.filter(Users__id=user_id)
+        serializer = SystemSerializer(systems, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class SystemDetailView(APIView):
+    def get(self, request, *args, **kwargs):
+        user_id = request.query_params.get('user_id')
+        system_id = request.query_params.get('system_id')
+
+        if not user_id or not system_id:
+            return Response({"error": "user_id and system_id are required."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(id=user_id)
+            system = System.objects.get(id=system_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        except System.DoesNotExist:
+            return Response({"error": "System not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if the user has access to this system
+        if user not in system.Users.all():
+            return Response({"error": "User does not have access to this system."},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        serializer = SystemSerializer(system)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+# class GetAllSystems(APIView):
+#     permission_classes = [IsAuthenticated]  # only logged-in users
+#     def get(self, request, *args, **kwargs):
+#         user = request.user  # 🔥 this gives you the currently logged-in user
+#         systems = System.objects.filter(Users=user)  # only systems user is part of
+#         serializer = SystemSerializer(systems, many=True)
+#         return Response(serializer.data, status=status.HTTP_200_OK)
