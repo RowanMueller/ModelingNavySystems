@@ -70,7 +70,7 @@ class GetConnectionsView(APIView):
         user_id = current_user.id
         try:
             # Verify the System exists for the given userId
-            system = System.objects.get(id=systemId, User_id=userId)
+            system = System.objects.get(id=systemId, User_id=user_id)
             # Fetch all Connections for the System
             connections = Connection.objects.filter(System=system)
             serializer = ConnectionSerializer(connections, many=True)
@@ -98,7 +98,7 @@ class DeleteSystemView(APIView):
 
         try:
             # Fetch the System for the given userId and systemId
-            system = System.objects.get(id=systemId, User_id=userId)
+            system = System.objects.get(id=systemId, User_id=user_id)
             system.delete()  # Cascades to Devices and Connections
             return Response(
                 {"message": "System and associated devices/connections deleted successfully"},
