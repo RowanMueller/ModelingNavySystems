@@ -12,7 +12,7 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem("access_token");
       if (token) {
         try {
-          const response = await fetch("http://localhost:8000/api/v1/auth/verify/", {
+          const response = await fetch(`${import.meta.env.VITE_BASE_URL}/api/v1/auth/verify/`, {
             method: "POST",
             headers: { 
               "Content-Type": "application/json"
@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const response = await fetch("http://localhost:8000/api/v1/auth/refresh/", {
+      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/api/v1/auth/refresh/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refresh }),
@@ -78,12 +78,17 @@ export const AuthProvider = ({ children }) => {
 
     localStorage.setItem("access_token", data.access);
     localStorage.setItem("refresh_token", data.refresh);
+    console.log(data.user.id);
+    if (data.user && data.user.id) {
+      localStorage.setItem("user_id", data.user.id);
+    }
     setUser({ loggedIn: true, ...data.user });
   };
 
   const logout = () => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user_id");
     setUser(null);
   };
 

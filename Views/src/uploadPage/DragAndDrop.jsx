@@ -80,7 +80,7 @@ export default function DragAndDrop() {
           const formData = new FormData();
           files.forEach((file) => formData.append("files", file)); // Append multiple files
           await axios
-            .post("http://localhost:8000/api/v1/upload/", formData, {
+            .post(`${import.meta.env.VITE_BASE_URL}/api/v1/upload/`, formData, {
               headers: { "Content-Type": "multipart/form-data" },
             })
             .then((response) => {
