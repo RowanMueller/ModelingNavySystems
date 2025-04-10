@@ -46,7 +46,11 @@ export default function GraphPage({ id, name, version }) {
 
   useEffect(() => {
     axios
-      .get(`${import.meta.env.VITE_BASE_URL}/api/v1/get-devices/`)
+      .get(`${import.meta.env.VITE_BASE_URL}/api/v1/get-devices/`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+        },
+      })
       .then((res) => {
         const newNodes = res.data.map((device, i) => {
           const { AdditionalAsJson, ...deviceData } = device;

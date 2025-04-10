@@ -12,13 +12,17 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem("access_token");
       if (token) {
         try {
-          const response = await fetch(`${import.meta.env.VITE_BASE_URL}/api/v1/auth/verify/`, {
-            method: "POST",
-            headers: { 
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ token })
-          });
+          const response = await fetch(
+            `${import.meta.env.VITE_BASE_URL}/api/v1/auth/verify/`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ token }),
+            }
+          );
 
           if (response.ok) {
             // If token is valid, set the user state
@@ -28,7 +32,7 @@ export const AuthProvider = ({ children }) => {
             await refreshAccessToken();
           }
         } catch (error) {
-          console.error('Token verification failed:', error);
+          console.error("Token verification failed:", error);
           await refreshAccessToken();
         }
       }
@@ -46,11 +50,17 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/api/v1/auth/refresh/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refresh }),
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}/api/v1/auth/refresh/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${refresh}`,
+          },
+          body: JSON.stringify({ refresh }),
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -62,17 +72,21 @@ export const AuthProvider = ({ children }) => {
         return false;
       }
     } catch (error) {
-      console.error('Token refresh failed:', error);
+      console.error("Token refresh failed:", error);
       logout();
       return false;
     }
   };
 
   const login = (data) => {
-    console.log('Login data received:', { ...data, access: 'HIDDEN', refresh: 'HIDDEN' });
-    
+    console.log("Login data received:", {
+      ...data,
+      access: "HIDDEN",
+      refresh: "HIDDEN",
+    });
+
     if (!data.access || !data.refresh) {
-      console.error('Missing tokens in login data');
+      console.error("Missing tokens in login data");
       return;
     }
 
