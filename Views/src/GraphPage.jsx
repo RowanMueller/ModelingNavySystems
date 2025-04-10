@@ -7,6 +7,8 @@ import {
   useNodesState,
   useEdgesState,
   addEdge,
+  useViewport,
+  ReactFlowProvider,
 } from "@xyflow/react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Save, Download, X } from "lucide-react";
@@ -29,13 +31,22 @@ import { toast } from "react-hot-toast";
 const initialNodes = [];
 const initialEdges = [];
 
-export default function GraphPage({ id, name, version }) {
+export default function GraphPage() {
+  return (
+    <ReactFlowProvider>
+      <GraphContent />
+    </ReactFlowProvider>
+  );
+}
+
+function GraphContent() {
   const navigate = useNavigate();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [flowInstance, setFlowInstance] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
   const [newProperty, setNewProperty] = useState("");
+  const { x, y, zoom } = useViewport();
 
   const popupRef = useRef(null);
 
@@ -60,7 +71,7 @@ export default function GraphPage({ id, name, version }) {
             data: {
               label: device.device_name || `Device ${i + 1}`,
               ...deviceData, // Spread the device data without AdditionalAsJson
-              ...(AdditionalAsJson || {}), // Spread the AdditionalAsJson contents
+              ...(AdditionalAsJson || {}), // Spread the AdditionalAsJson contents so that we can display it in the node properties as normal
             },
           };
         });
@@ -113,16 +124,23 @@ export default function GraphPage({ id, name, version }) {
           Back
         </button>
         <button
-          onClick={() =>
+          onClick={() => {
+
+            console.log(flowInstance);
+
+            // Get the current viewport center
+            const centerX = -x / zoom;
+            const centerY = -y / zoom;
+            
             setNodes((nds) => [
               ...nds,
               {
                 id: String(nds.length + 1),
-                position: { x: 0, y: 100 * (nds.length + 1) },
+                position: { x: centerX, y: centerY },
                 data: { label: `Device ${nds.length + 1}` },
               },
-            ])
-          }
+            ]);
+          }}
           className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
         >
           <Plus />

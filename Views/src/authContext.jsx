@@ -50,17 +50,11 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_BASE_URL}/api/v1/auth/refresh/`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${refresh}`,
-          },
-          body: JSON.stringify({ refresh }),
-        }
-      );
+      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/api/v1/auth/refresh/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh }),
+      });
 
       if (response.ok) {
         const data = await response.json();
@@ -92,22 +86,21 @@ export const AuthProvider = ({ children }) => {
 
     localStorage.setItem("access_token", data.access);
     localStorage.setItem("refresh_token", data.refresh);
-    console.log(data.user.id);
-    if (data.user && data.user.id) {
-      localStorage.setItem("user_id", data.user.id);
-    }
     setUser({ loggedIn: true, ...data.user });
   };
 
   const logout = () => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user_id");
     setUser(null);
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center">
+        <div>Loading...</div>
+      </div>
+    );
   }
 
   return (
