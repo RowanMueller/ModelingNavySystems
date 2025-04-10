@@ -53,7 +53,10 @@ export const AuthProvider = ({ children }) => {
         `${import.meta.env.VITE_BASE_URL}/api/v1/auth/refresh/`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            // authorization header is not needed for refresh
+          },
           body: JSON.stringify({ refresh }),
         }
       );

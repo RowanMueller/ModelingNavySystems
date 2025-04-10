@@ -108,7 +108,9 @@ export default function UploadPage() {
                   {
                     headers: {
                       "Content-Type": "multipart/form-data",
-                      Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+                      Authorization: `Bearer ${localStorage.getItem(
+                        "access_token"
+                      )}`,
                     },
                   }
                 )

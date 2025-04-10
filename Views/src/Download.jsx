@@ -11,6 +11,9 @@ export default function Download() {
           onClick={() => {
             Axios.get(`${import.meta.env.VITE_BASE_URL}/api/v1/download`, {
               responseType: "blob", // Ensure binary data is handled correctly
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+              },
             }).then((res) => {
               const blob = new Blob([res.data], {
                 type: res.headers["content-type"],
