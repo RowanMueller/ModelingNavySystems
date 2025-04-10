@@ -10,10 +10,10 @@ from django.db import models
 
 class System(models.Model):
     Name = models.CharField(max_length=100)
-    User = models.ManyToManyField(User, related_name="shared_systems") # many to many relationship
+    User = models.ForeignKey(User, on_delete=models.CASCADE, related_name="systems", default="1")
     EdgeCount = models.IntegerField(default=0)
     NodeCount = models.IntegerField(default=0)
-    Version = models.JSONField(null=True, blank=True)  # {"1": timestamp}
+    Version = models.IntegerField(null=True, blank=True, default=0)
 
     def __str__(self):
         return f"{self.AssetId} - {self.AssetName}"
@@ -75,8 +75,8 @@ class Device(models.Model):
     RoomNumber = models.CharField(max_length=100, null=True, blank=True)
     AdditionalAsJson = models.JSONField(null=True, blank=True)
     system = models.ForeignKey(System, on_delete=models.CASCADE, related_name="devices", default="1")
-    Xposition = models.FloatField(null=True, blank=True)
-    Yposition = models.FloatField(null=True, blank=True) 
+    Xposition = models.FloatField(null=True, blank=True, default=0)
+    Yposition = models.FloatField(null=True, blank=True, default=0) 
 
     def __str__(self):
         return f"{self.AssetId} - {self.AssetName}"

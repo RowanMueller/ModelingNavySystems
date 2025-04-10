@@ -223,11 +223,10 @@ class FileUploadView(APIView):
 
 class GetAllSystems(APIView):
     def get(self, request, *args, **kwargs):
-        user_id = request.query_params.get("user_id")
-        if not user_id:
+        user = request.user
+        if not user:
             return Response({"error": "Missing user_id"}, status=status.HTTP_400_BAD_REQUEST)
-
-        systems = System.objects.filter(Users__id=user_id)
+        systems = System.objects.filter(User__id=user.id)
         serializer = SystemSerializer(systems, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -259,7 +258,7 @@ class SystemDetailView(APIView):
 # class GetAllSystems(APIView):
 #     permission_classes = [IsAuthenticated]  # only logged-in users
 #     def get(self, request, *args, **kwargs):
-#         user = request.user  # 🔥 this gives you the currently logged-in user
+#         user = request.user  # this gives you the currently logged-in user
 #         systems = System.objects.filter(Users=user)  # only systems user is part of
 #         serializer = SystemSerializer(systems, many=True)
 #         return Response(serializer.data, status=status.HTTP_200_OK)
