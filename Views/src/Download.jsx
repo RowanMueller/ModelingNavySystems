@@ -9,7 +9,7 @@ export default function Download() {
         <button
           className="mt-4 p-2 bg-blue-500 text-white rounded-lg"
           onClick={() => {
-            Axios.get("http://localhost:8000/api/v1/download", {
+            Axios.get(`${import.meta.env.VITE_BASE_URL}/api/v1/download`, {
               responseType: "blob", // Ensure binary data is handled correctly
             }).then((res) => {
               const blob = new Blob([res.data], {

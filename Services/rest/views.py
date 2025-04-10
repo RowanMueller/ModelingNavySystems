@@ -1,12 +1,17 @@
 from django.shortcuts import render
 from rest_framework import generics
 from .models import Device, System 
-from .serializers import DeviceSerializer, SystemSerializer
+from .serializers import DeviceSerializer, ConnectionSerializer, SystemSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Connection, Device, System
+
 import re
 from rest_framework.permissions import IsAuthenticated
 import pandas as pd
@@ -19,6 +24,68 @@ class DeviceListCreate(generics.ListCreateAPIView):
     # 
     queryset = Device.objects.all()
     serializer_class = DeviceSerializer
+
+class GetDevicesView(APIView):
+    def get(self, request, userId, systemId, *args, **kwargs):
+        try:
+            # Verify the System exists for the given userId
+            system = System.objects.get(id=systemId, User_id=userId)
+            # Fetch all Devices for the System
+            devices = Device.objects.filter(system=system)
+            serializer = DeviceSerializer(devices, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except System.DoesNotExist:
+            return Response(
+                {"error": "System not found or does not belong to the user"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class GetConnectionsView(APIView):
+    def get(self, request, userId, systemId, *args, **kwargs):
+        try:
+            # Verify the System exists for the given userId
+            system = System.objects.get(id=systemId, User_id=userId)
+            # Fetch all Connections for the System
+            connections = Connection.objects.filter(System=system)
+            serializer = ConnectionSerializer(connections, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except System.DoesNotExist:
+            return Response(
+                {"error": "System not found or does not belong to the user"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class DeleteSystemView(APIView):
+    def delete(self, request, userId, systemId, *args, **kwargs):
+        try:
+            # Fetch the System for the given userId and systemId
+            system = System.objects.get(id=systemId, User_id=userId)
+            system.delete()  # Cascades to Devices and Connections
+            return Response(
+                {"message": "System and associated devices/connections deleted successfully"},
+                status=status.HTTP_204_NO_CONTENT
+            )
+        except System.DoesNotExist:
+            return Response(
+                {"error": "System not found or does not belong to the user"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 
 # Fetches devices and converts to JSON
 class GetAllDevices(APIView):
