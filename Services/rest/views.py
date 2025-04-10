@@ -24,11 +24,27 @@ class DeviceListCreate(generics.ListCreateAPIView):
     serializer_class = DeviceSerializer
 
 class GetDevicesView(APIView):
-    def get(self, request, userId, systemId, *args, **kwargs):
+    def get(self, request, systemId, *args, **kwargs):
+        current_user = request.user
+        if not current_user.is_authenticated:
+            return Response(
+                {"error": "User not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        user_id = current_user.id
+        if user_id is None:  # Rare, but adds safety
+            return Response(
+                {"error": "Invalid user ID"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if not systemId:  # Validate systemId
+            return Response(
+                {"error": "System ID is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         try:
-            # Verify the System exists for the given userId
-            system = System.objects.get(id=systemId, User_id=userId)
-            # Fetch all Devices for the System
+            system = System.objects.get(id=systemId, User_id=user_id)
             devices = Device.objects.filter(system=system)
             serializer = DeviceSerializer(devices, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -39,12 +55,19 @@ class GetDevicesView(APIView):
             )
         except Exception as e:
             return Response(
-                {"error": str(e)},
+                {"error": f"An unexpected error occurred: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 class GetConnectionsView(APIView):
     def get(self, request, userId, systemId, *args, **kwargs):
+        current_user = request.user
+        if current_user == None:
+            return Response(
+                {"error": "User not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        user_id = current_user.id
         try:
             # Verify the System exists for the given userId
             system = System.objects.get(id=systemId, User_id=userId)
@@ -64,7 +87,15 @@ class GetConnectionsView(APIView):
             )
 
 class DeleteSystemView(APIView):
-    def delete(self, request, userId, systemId, *args, **kwargs):
+    def delete(self, request, systemId, *args, **kwargs):
+        current_user = request.user
+        if current_user == None:
+            return Response(
+                {"error": "User not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        user_id = current_user.id
+
         try:
             # Fetch the System for the given userId and systemId
             system = System.objects.get(id=systemId, User_id=userId)
