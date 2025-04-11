@@ -100,8 +100,8 @@ export default function Dashboard() {
         {system.Name}
       </h3>
       <div className="space-y-2 text-gray-600">
-        <p>Total Nodes: {system.TotalNodes}</p>
-        <p>Total Edges: {system.TotalEdges}</p>
+        <p>Total Nodes: {system.NodeCount}</p>
+        <p>Total Edges: {system.EdgeCount}</p>
       </div>
       {/* <div className="mt-4">
         <img

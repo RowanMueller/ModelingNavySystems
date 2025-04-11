@@ -125,18 +125,20 @@ function GraphContent() {
         </button>
         <button
           onClick={() => {
-            console.log(flowInstance);
-
-            // Get the current viewport center
-            const centerX = -x / zoom;
-            const centerY = -y / zoom;
+            flowInstance.setCenter(0, 0, {
+              zoom: 1,
+              duration: 1000,
+            });
 
             setNodes((nds) => [
               ...nds,
               {
                 id: String(nds.length + 1),
-                position: { x: centerX, y: centerY },
-                data: { label: `Device ${nds.length + 1}` },
+                position: {
+                  x: 0,
+                  y: 0,
+                },
+                data: { label: `New Device` },
               },
             ]);
           }}
@@ -181,7 +183,7 @@ function GraphContent() {
           onInit={setFlowInstance}
           onNodeClick={onNodeClick}
           className="w-full h-full"
-          defaultViewport={{ x: 350, y: 350, zoom: 5 }}
+          defaultViewport={{ x: 350, y: 350, zoom: 1 }}
         >
           <Controls />
           <MiniMap />
