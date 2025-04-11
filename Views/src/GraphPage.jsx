@@ -57,7 +57,11 @@ function GraphContent() {
 
   useEffect(() => {
     axios
-      .get(`${import.meta.env.VITE_BASE_URL}/api/v1/get-devices/`) //TODO -> need to change to the new url scheme with the system i
+      .get(`${import.meta.env.VITE_BASE_URL}/api/v1/get-devices/`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+        },
+      })
       .then((res) => {
         const newNodes = res.data.map((device, i) => {
           const { AdditionalAsJson, ...deviceData } = device;
@@ -121,13 +125,12 @@ function GraphContent() {
         </button>
         <button
           onClick={() => {
-
             console.log(flowInstance);
 
             // Get the current viewport center
             const centerX = -x / zoom;
             const centerY = -y / zoom;
-            
+
             setNodes((nds) => [
               ...nds,
               {

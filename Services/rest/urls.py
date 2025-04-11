@@ -11,6 +11,7 @@ urlpatterns = [
     path('login/', auth.LoginView.as_view(), name='login'),
     path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('auth/verify/', TokenVerifyView.as_view(), name='token_verify'),
+    path('getSystems/', views.GetAllSystems.as_view(), name='get-systems'),
     path('<int:userId>/<int:systemId>/deleteSystem/', views.DeleteSystemView.as_view(), name='delete-system'),
     path('<int:userId>/<int:systemId>/getDevices/', views.GetDevicesView.as_view(), name='get-devices-system'),
     path('<int:userId>/<int:systemId>/getConnections/', views.GetConnectionsView.as_view(), name='get-connections-system'),

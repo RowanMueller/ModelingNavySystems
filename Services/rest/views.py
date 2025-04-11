@@ -255,10 +255,12 @@ class FileUploadView(APIView):
 class GetAllSystems(APIView):
     def get(self, request, *args, **kwargs):
         user = request.user
+        
         if not user:
             return Response({"error": "Missing user_id"}, status=status.HTTP_400_BAD_REQUEST)
         systems = System.objects.filter(User__id=user.id)
         serializer = SystemSerializer(systems, many=True)
+        print(serializer.data)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 class SystemDetailView(APIView):
