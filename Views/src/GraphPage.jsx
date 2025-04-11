@@ -125,13 +125,12 @@ function GraphContent() {
         </button>
         <button
           onClick={() => {
-
             console.log(flowInstance);
 
             // Get the current viewport center
             const centerX = -x / zoom;
             const centerY = -y / zoom;
-            
+
             setNodes((nds) => [
               ...nds,
               {

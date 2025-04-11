@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework import generics
-from .models import Device
-from .serializers import DeviceSerializer, ConnectionSerializer
+from .models import Device, System 
+from .serializers import DeviceSerializer, ConnectionSerializer, SystemSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -13,8 +13,10 @@ from rest_framework import status
 from .models import Connection, Device, System
 
 import re
+from rest_framework.permissions import IsAuthenticated
 import pandas as pd
 import os
+from django.contrib.auth.models import User
 
 # Create your views here.
 
@@ -24,11 +26,27 @@ class DeviceListCreate(generics.ListCreateAPIView):
     serializer_class = DeviceSerializer
 
 class GetDevicesView(APIView):
-    def get(self, request, userId, systemId, *args, **kwargs):
+    def get(self, request, systemId, *args, **kwargs):
+        current_user = request.user
+        if not current_user.is_authenticated:
+            return Response(
+                {"error": "User not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        user_id = current_user.id
+        if user_id is None:  # Rare, but adds safety
+            return Response(
+                {"error": "Invalid user ID"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if not systemId:  # Validate systemId
+            return Response(
+                {"error": "System ID is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         try:
-            # Verify the System exists for the given userId
-            system = System.objects.get(id=systemId, User_id=userId)
-            # Fetch all Devices for the System
+            system = System.objects.get(id=systemId, User_id=user_id)
             devices = Device.objects.filter(system=system)
             serializer = DeviceSerializer(devices, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -39,15 +57,22 @@ class GetDevicesView(APIView):
             )
         except Exception as e:
             return Response(
-                {"error": str(e)},
+                {"error": f"An unexpected error occurred: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 class GetConnectionsView(APIView):
     def get(self, request, userId, systemId, *args, **kwargs):
+        current_user = request.user
+        if current_user == None:
+            return Response(
+                {"error": "User not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        user_id = current_user.id
         try:
             # Verify the System exists for the given userId
-            system = System.objects.get(id=systemId, User_id=userId)
+            system = System.objects.get(id=systemId, User_id=user_id)
             # Fetch all Connections for the System
             connections = Connection.objects.filter(System=system)
             serializer = ConnectionSerializer(connections, many=True)
@@ -64,10 +89,18 @@ class GetConnectionsView(APIView):
             )
 
 class DeleteSystemView(APIView):
-    def delete(self, request, userId, systemId, *args, **kwargs):
+    def delete(self, request, systemId, *args, **kwargs):
+        current_user = request.user
+        if current_user == None:
+            return Response(
+                {"error": "User not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        user_id = current_user.id
+
         try:
             # Fetch the System for the given userId and systemId
-            system = System.objects.get(id=systemId, User_id=userId)
+            system = System.objects.get(id=systemId, User_id=user_id)
             system.delete()  # Cascades to Devices and Connections
             return Response(
                 {"message": "System and associated devices/connections deleted successfully"},
@@ -92,7 +125,6 @@ class GetAllDevices(APIView):
         devices = Device.objects.all()
         serializer = DeviceSerializer(devices, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 # connects to urls.py
 class FileUploadView(APIView):
@@ -219,3 +251,47 @@ class FileUploadView(APIView):
         df = df.fillna('')
 
         return df
+
+class GetAllSystems(APIView):
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        
+        if not user:
+            return Response({"error": "Missing user_id"}, status=status.HTTP_400_BAD_REQUEST)
+        systems = System.objects.filter(User__id=user.id)
+        serializer = SystemSerializer(systems, many=True)
+        print(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class SystemDetailView(APIView):
+    def get(self, request, *args, **kwargs):
+        user_id = request.query_params.get('user_id')
+        system_id = request.query_params.get('system_id')
+
+        if not user_id or not system_id:
+            return Response({"error": "user_id and system_id are required."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(id=user_id)
+            system = System.objects.get(id=system_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        except System.DoesNotExist:
+            return Response({"error": "System not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if the user has access to this system
+        if user not in system.Users.all():
+            return Response({"error": "User does not have access to this system."},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        serializer = SystemSerializer(system)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+# class GetAllSystems(APIView):
+#     permission_classes = [IsAuthenticated]  # only logged-in users
+#     def get(self, request, *args, **kwargs):
+#         user = request.user  # this gives you the currently logged-in user
+#         systems = System.objects.filter(Users=user)  # only systems user is part of
+#         serializer = SystemSerializer(systems, many=True)
+#         return Response(serializer.data, status=status.HTTP_200_OK)
