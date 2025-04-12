@@ -93,7 +93,9 @@ export default function Dashboard() {
     <div
       className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
       onClick={() => {
-        navigate(`/system/${system.id}`);
+        navigate(`/system/${system.id}`, {
+          state: { system: system},
+        });
       }}
     >
       <h3 className="text-xl font-semibold text-gray-800 mb-4">

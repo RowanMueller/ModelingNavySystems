@@ -7,10 +7,9 @@ import {
   useNodesState,
   useEdgesState,
   addEdge,
-  useViewport,
   ReactFlowProvider,
 } from "@xyflow/react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Plus, Save, Download, X } from "lucide-react";
 import "@xyflow/react/dist/style.css";
 import axios from "axios";
@@ -45,8 +44,11 @@ function GraphContent() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [flowInstance, setFlowInstance] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
+  const focusedNodeRef = useRef(null);
   const [newProperty, setNewProperty] = useState("");
-  const { x, y, zoom } = useViewport();
+  const location = useLocation();
+
+  const system = location.state.system;
 
   const popupRef = useRef(null);
 
@@ -82,13 +84,43 @@ function GraphContent() {
       if (event.key === "Escape") {
         setSelectedNode(false);
       }
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        event.key === "d" &&
+        focusedNodeRef.current
+      ) {
+        event.preventDefault();
+        setNodes((nds) => [
+          ...nds,
+          {
+            id: `new-${String(nds.length + 1)}`,
+            position: {
+              x: focusedNodeRef.current.position.x + 300,
+              y: focusedNodeRef.current.position.y,
+            },
+            data: {
+              ...focusedNodeRef.current.data,
+              label: `${focusedNodeRef.current.data.label} (copy)`,
+            },
+          },
+        ]);
+      }
     };
 
     document.addEventListener("keydown", handleKeyDown);
-
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
+  }, []);
+
+  const onNodeDragStart = useCallback((event, node) => {
+    console.log("Node drag started - node:", node);
+    focusedNodeRef.current = node;
+  }, []);
+
+  const onNodeDragStop = useCallback((event, node) => {
+    console.log("Node drag stopped:", node);
+    focusedNodeRef.current = node;
   }, []);
 
   const handleSave = async () => {
@@ -133,12 +165,12 @@ function GraphContent() {
             setNodes((nds) => [
               ...nds,
               {
-                id: String(nds.length + 1),
+                id: `new-${String(nds.length + 1)}`,
                 position: {
                   x: 0,
                   y: 0,
                 },
-                data: { label: `New Device` },
+                data: { label: "New Device", SystemVersion: system.Version },
               },
             ]);
           }}
@@ -182,6 +214,8 @@ function GraphContent() {
           onConnect={onConnect}
           onInit={setFlowInstance}
           onNodeClick={onNodeClick}
+          onNodeDragStart={onNodeDragStart}
+          onNodeDragStop={onNodeDragStop}
           className="w-full h-full"
           defaultViewport={{ x: 350, y: 350, zoom: 1 }}
         >
@@ -191,7 +225,7 @@ function GraphContent() {
         </ReactFlow>
       </div>
 
-      {/* Node Properties Modal */}
+      {/* Device Properties Modal */}
       {selectedNode && (
         <div
           ref={popupRef}
@@ -204,7 +238,7 @@ function GraphContent() {
             >
               <X size={20} />
             </button>
-            <h2 className="text-xl font-bold mb-4">Node Properties</h2>
+            <h2 className="text-xl font-bold mb-4">Device Properties</h2>
             <div className="space-y-4 max-h-[500px] overflow-y-auto">
               {Object.keys(selectedNode.data).map((key) => {
                 return (
@@ -242,7 +276,7 @@ function GraphContent() {
                     {/* {typeof selectedNode.data[key] === 'object'
                       ? JSON.stringify(selectedNode.data[key])
                       : String(selectedNode.data[key])}
-                  </p> */}
+                    </p> */}
                   </div>
                 );
               })}
