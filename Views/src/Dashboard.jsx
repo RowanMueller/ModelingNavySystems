@@ -72,7 +72,7 @@ export default function Dashboard() {
   const fetchSystems = async () => {
     try {
       await axios
-        .get(`${import.meta.env.VITE_BASE_URL}/api/v1/getSystems/`, {
+        .get(`${import.meta.env.VITE_BASE_URL}/api/v1/get-systems/`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("access_token")}`,
           },
