@@ -59,8 +59,9 @@ function GraphContent() {
 
   useEffect(() => {
     axios
-      .get(`${import.meta.env.VITE_BASE_URL}/api/v1/get-devices/`, {
+      .get(`${import.meta.env.VITE_BASE_URL}/api/v1/${system.id}/get-devices`, {
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("access_token")}`,
         },
       })

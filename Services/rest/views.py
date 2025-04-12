@@ -30,11 +30,7 @@ class GetDevicesView(APIView):
     
     def get(self, request, systemId, *args, **kwargs):
         user_id = request.user.id
-        if user_id is None:  # Rare, but adds safety
-            return Response(
-                {"error": "Invalid user ID"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+
         if not systemId:  # Validate systemId
             return Response(
                 {"error": "System ID is required"},
@@ -43,7 +39,7 @@ class GetDevicesView(APIView):
 
         try:
             system = System.objects.get(id=systemId, User_id=user_id)
-            devices = Device.objects.filter(system=system)
+            devices = Device.objects.filter(System=system)
             serializer = DeviceSerializer(devices, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except System.DoesNotExist:
