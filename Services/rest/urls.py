@@ -12,7 +12,6 @@ urlpatterns = [
     path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('auth/verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('get-systems/', views.GetAllSystems.as_view(), name='get-systems'),
-    path('new-system/', views.GetAllSystems.as_view(), name='get-systems'),
     path('<int:userId>/<int:systemId>/delete-system/', views.DeleteSystemView.as_view(), name='delete-system'),
     path('<int:userId>/<int:systemId>/get-devices/', views.GetDevicesView.as_view(), name='get-devices-system'),
     path('<int:userId>/<int:systemId>/get-connections/', views.GetConnectionsView.as_view(), name='get-connections-system'),
