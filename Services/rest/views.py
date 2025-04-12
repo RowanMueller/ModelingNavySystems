@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from rest_framework import generics
 from .models import Device, System 
 from .serializers import DeviceSerializer, ConnectionSerializer, SystemSerializer
@@ -17,7 +16,6 @@ from django.http import JsonResponse
 
 import re
 import pandas as pd
-import os
 from django.contrib.auth.models import User
 
 # Create your views here.
@@ -123,6 +121,12 @@ class FileUploadView(APIView):
         if 'files' not in request.FILES:
             return Response({"error": "No files provided"}, status=status.HTTP_400_BAD_REQUEST)
 
+        name = request.data.get('name')
+        if name is None:
+            return Response({"error": "System name is required"}, status=status.HTTP_400_BAD_REQUEST)
+        system = System(User=request.user, Name=name)
+        system.save()
+
         uploaded_files = []
         for file in request.FILES.getlist('files'):  # Handle multiple files
             # Saves each file under 'uploads/' directory
@@ -171,7 +175,9 @@ class FileUploadView(APIView):
                     BuildingName=row.get('Building Name'), 
                     Floor=row.get('Floor'),
                     RoomNumber=row.get('Room Number'), 
-                    AdditionalAsJson=row.get('Additional JSON')
+                    AdditionalAsJson=row.get('Additional JSON'),
+                    SystemVersion=1,
+                    System=system
                 )
                 device.save()
 
@@ -250,6 +256,18 @@ class GetAllSystems(APIView):
         systems = System.objects.filter(User__id=user.id)
         serializer = SystemSerializer(systems, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class CreateSystemView(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        version = request.data.get('version') # version could be 0
+        name = request.data.get('name')
+        if version is None:
+            version = 1
+        system = System(User=user, Version=version, Name=name)
+        system.save()
+        return Response(status=status.HTTP_201_CREATED, data=SystemSerializer(system).data)
 
 class SystemDetailView(APIView):
     permission_classes = [IsAuthenticated]

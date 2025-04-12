@@ -5,7 +5,6 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 export default function UploadPage() {
-
   const [files, setFiles] = useState([]);
   const [systemName, setSystemName] = useState("");
   const navigate = useNavigate();
@@ -93,33 +92,71 @@ export default function UploadPage() {
           </button>
           <button
             className="w-full rounded-lg py-2 bg-blue-500 hover:bg-blue-600 text-white mt-4"
-            onClick={async () => {
-              // If no files are uploaded, create a blank system
-              if (files.length === 0) {
-                navigate("/system/new");
+            onClick={() => {
+              if (systemName === "") {
+                toast.error("Please enter a system name");
                 return;
               }
-              // If files are uploaded, create a new system
-              const formData = new FormData();
-              files.forEach((file) => formData.append("files", file)); // Append multiple files
-              await axios
-                .post(
-                  `${import.meta.env.VITE_BASE_URL}/api/v1/upload/`,
-                  formData,
-                  {
-                    headers: {
-                      "Content-Type": "multipart/form-data",
-                      Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+              // create a new system first
+
+              if (files.length === 0) {
+                axios
+                  .post(
+                    `${import.meta.env.VITE_BASE_URL}/api/v1/create-system/`,
+                    {
+                      version: files.length === 0,
+                      name: systemName,
                     },
-                  }
-                )
-                .then((response) => {
-                  console.log(response.data);
-                  toast.success("Successfully uploaded files");
-                })
-                .catch((error) => {
-                  console.error(error);
-                });
+                    {
+                      headers: {
+                        Authorization: `Bearer ${localStorage.getItem(
+                          "access_token"
+                        )}`,
+                      },
+                    }
+                  )
+                  .then((response) => {
+                    navigate(`/system/${response.data.id}`, {
+                      state: {
+                        system: response.data,
+                      },
+                    });
+                  })
+                  .catch((error) => {
+                    console.log(error);
+                    toast.error("Error creating system");
+                  });
+                return;
+              } else {
+                const formData = new FormData();
+                files.forEach((file) => formData.append("files", file)); // Append multiple files
+                formData.append("name", systemName);
+                axios
+                  .post(
+                    `${import.meta.env.VITE_BASE_URL}/api/v1/upload/`,
+                    formData,
+                    {
+                      headers: {
+                        "Content-Type": "multipart/form-data",
+                        Authorization: `Bearer ${localStorage.getItem(
+                          "access_token"
+                        )}`,
+                      },
+                    }
+                  )
+                  .then((response) => {
+                    toast.success("Successfully uploaded files");
+                    navigate(`/system/${response.data.id}`, {
+                      state: {
+                        system: response.data,
+                      },
+                    });
+                  })
+                  .catch((error) => {
+                    console.log(error);
+                    toast.error("Error creating system");
+                  });
+              }
             }}
           >
             {/* display different text based on if files are uploaded */}
