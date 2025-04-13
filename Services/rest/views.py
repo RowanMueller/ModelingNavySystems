@@ -153,7 +153,8 @@ class FileUploadView(APIView):
                 return Response({
                     "error": "Invalid file format. Please upload a CSV or Excel file."
                 }, status=status.HTTP_400_BAD_REQUEST)
-
+            
+            y = 0 
             for _, row in df.iterrows():
                 device = Device(
                     AssetId=row.get('Asset Identifier'),
@@ -175,10 +176,13 @@ class FileUploadView(APIView):
                     Floor=row.get('Floor'),
                     RoomNumber=row.get('Room Number'), 
                     AdditionalAsJson=row.get('Additional JSON'),
+                    Xposition=0,
+                    Yposition=y, 
                     SystemVersion=1,
                     System=system
                 )
                 device.save()
+                y += 50
 
         return Response({
             "message": "Files uploaded successfully",
@@ -269,6 +273,74 @@ class CreateSystemView(APIView):
         system.save()
         return Response(status=status.HTTP_201_CREATED, data=SystemSerializer(system).data)
 
+class UploadNewSystemVersion(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request, system_id, devices,  *args, **kwargs):
+        user = request.user
+        version = request.data.get('version') # version could be 0
+        name = request.data.get('name')
+        if version is None:
+            version = 1
+        system = System(User=user, Version=version, Name=name)
+        system.save()
+        return Response(status=status.HTTP_201_CREATED, data=SystemSerializer(system).data)
+    
+class SaveSystem(APIView): 
+    permission_classes = [IsAuthenticated]
+    def post(self, request, systemID, *args, **kwargs):
+        user = request.user
+        system_id = systemID + 1 
+        version = request.data.get('version') + 1
+        devices = request.data.get('devices')
+        connections = request.data.get('connections')
+
+        if not system_id or not version:
+            return Response({"error": "system_id and version are required."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            system = System.objects.get(id=system_id, User=user)
+            system.Version = version
+            system.NodeCount = len(devices)
+            system.EdgeCount = len(connections)
+            system.save()
+
+            # Save new devices (increment version, auto-increment id)
+            for device_data in devices:
+                # Copy device data so we don't modify the original request
+                new_device_data = device_data.copy()
+
+                # Remove 'id' if it's included in the incoming data
+                new_device_data.pop('id', None)
+
+                # Increment version by 1 (default to 0 if not provided)
+                original_version = device_data.get('version', 0)
+                new_device_data['version'] = original_version + 1
+
+                # Create new device linked to this system
+                Device.objects.create(System=system, **new_device_data)
+                
+            # Save new connections (increment version, auto-increment id)
+            for connection_data in connections:
+                # Copy connection data so we don't modify the original request
+                new_connection_data = connection_data.copy()
+
+                # Remove 'id' if it's included in the incoming data
+                new_connection_data.pop('id', None)
+
+                # Increment version by 1 (default to 0 if not provided)
+                original_version = connection_data.get('version', 0)
+                new_connection_data['version'] = original_version + 1
+
+                # Create new connection linked to this system
+                Connection.objects.create(System=system, **new_connection_data)
+
+            
+            return Response({"message": "System saved successfully."},
+                            status=status.HTTP_200_OK)
+        except System.DoesNotExist:
+            return Response({"error": "System not found."}, status=status.HTTP_404_NOT_FOUND)
+
 class SystemDetailView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request, *args, **kwargs):
@@ -294,3 +366,7 @@ class SystemDetailView(APIView):
 
         serializer = SystemSerializer(system)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+# 1. Do save graph if I'm given system_id, increment version and system_id, system_version, devices, and connections. treat devices and connections
+# like new version track x and y values. 
+# 2. upload new system version if i'm given a file 
