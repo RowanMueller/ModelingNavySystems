@@ -14,9 +14,6 @@ export default function Download() {
                 Authorization: `Bearer ${localStorage.getItem("access_token")}`,
               },
               responseType: "blob", // Ensure binary data is handled correctly
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-              },
             }).then((res) => {
               const blob = new Blob([res.data], {
                 type: res.headers["content-type"],

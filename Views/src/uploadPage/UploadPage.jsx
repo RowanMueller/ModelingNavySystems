@@ -146,9 +146,9 @@ export default function UploadPage() {
                   )
                   .then((response) => {
                     toast.success("Successfully uploaded files");
-                    navigate(`/system/${response.data.id}`, {
+                    navigate(`/system/${response.data.system.id}`, {
                       state: {
-                        system: response.data,
+                        system: response.data.system,
                       },
                     });
                   })

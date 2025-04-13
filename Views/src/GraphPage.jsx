@@ -10,7 +10,7 @@ import {
   ReactFlowProvider,
 } from "@xyflow/react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Plus, Save, Download, X } from "lucide-react";
+import { Plus, Save, Download, X, Trash } from "lucide-react";
 import "@xyflow/react/dist/style.css";
 import axios from "axios";
 import { toast } from "react-hot-toast";
@@ -195,6 +195,33 @@ function GraphContent() {
         >
           <Download />
           <span className="ml-2">Download SysML file</span>
+        </button>
+        <button
+          onClick={() => {
+            axios
+              .delete(
+                `${import.meta.env.VITE_BASE_URL}/api/v1/${
+                  system.id
+                }/delete-system/`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${localStorage.getItem(
+                      "access_token"
+                    )}`,
+                  },
+                }
+              )
+              .then((res) => {
+                navigate("/dashboard");
+              })
+              .catch((err) => {
+                console.log(err);
+              });
+          }}
+          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-500 border border-transparent rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          <Trash />
+          <span className="ml-2">Delete System</span>
         </button>
         <button
           onClick={() => {

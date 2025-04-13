@@ -94,6 +94,9 @@ class DeleteSystemView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
+            print("_--------------------------------")
+            print(e);
+            print("_--------------------------------")
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -179,7 +182,8 @@ class FileUploadView(APIView):
 
         return Response({
             "message": "Files uploaded successfully",
-            "files": uploaded_files
+            "files": uploaded_files,
+            "system": SystemSerializer(system).data
         }, status=status.HTTP_201_CREATED)
     
     def read_sysml(self, file): #TODO have it so it parses data when it's on the next line 
