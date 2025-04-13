@@ -292,4 +292,4 @@ class SystemDetailView(APIView):
 #         user = request.user  # this gives you the currently logged-in user
 #         systems = System.objects.filter(Users=user)  # only systems user is part of
 #         serializer = SystemSerializer(systems, many=True)
-#         return Response(serializer.data, status=status.HTTP_200_OK)
+#         return Response(serializer.data, status=status.HTTP_200_OK) 
