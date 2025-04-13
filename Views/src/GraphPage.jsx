@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import {
   ReactFlow,
   MiniMap,
@@ -8,6 +8,9 @@ import {
   useEdgesState,
   addEdge,
   ReactFlowProvider,
+  BaseEdge,
+  EdgeLabelRenderer,
+  getBezierPath,
 } from "@xyflow/react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Plus, Save, Download, X, Trash } from "lucide-react";
@@ -44,6 +47,7 @@ function GraphContent() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [flowInstance, setFlowInstance] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
+  const [selectedEdge, setSelectedEdge] = useState(null);
   const [onDelete, setOnDelete] = useState(false);
   const focusedNodeRef = useRef(null);
   const [newProperty, setNewProperty] = useState("");
@@ -53,10 +57,74 @@ function GraphContent() {
 
   const popupRef = useRef(null);
 
+  // Custom edge component with label - moved outside the component render
+  const CustomEdge = useCallback(({
+    id,
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
+    data,
+  }) => {
+    const [edgePath, labelX, labelY] = getBezierPath({
+      sourceX,
+      sourceY,
+      sourcePosition,
+      targetX,
+      targetY,
+      targetPosition,
+    });
+
+    return (
+      <>
+        <BaseEdge id={id} path={edgePath} />
+        <EdgeLabelRenderer>
+          <div
+            style={{
+              position: 'absolute',
+              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+              background: '#fff',
+              padding: '4px',
+              borderRadius: '4px',
+              fontSize: '12px',
+              pointerEvents: 'all',
+              cursor: 'pointer',
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              const edge = edges.find(edge => edge.id === id);
+              setSelectedEdge(edge);
+            }}
+          >
+            {data?.label || ''}
+          </div>
+        </EdgeLabelRenderer>
+      </>
+    );
+  }, [edges, setSelectedEdge]);
+
+  // Memoize the edgeTypes object
+  const edgeTypes = useMemo(() => ({
+    custom: CustomEdge
+  }), [CustomEdge]);
+
   const onConnect = useCallback(
-    (params) => setEdges((eds) => addEdge(params, eds)),
+    (params) => {
+      const newEdge = {
+        ...params,
+        type: 'custom',
+        data: { label: 'New Connection' },
+      };
+      setEdges((eds) => addEdge(newEdge, eds));
+    },
     [setEdges]
   );
+
+  const onEdgeClick = useCallback((event, edge) => {
+    setSelectedEdge(edge);
+  }, []);
 
   useEffect(() => {
     axios
@@ -238,10 +306,12 @@ function GraphContent() {
           onConnect={onConnect}
           onInit={setFlowInstance}
           onNodeClick={onNodeClick}
+          onEdgeClick={onEdgeClick}
           onNodeMouseEnter={onNodeMouseEnter}
           onNodeMouseLeave={onNodeMouseLeave}
           className="w-full h-full"
           defaultViewport={{ x: 350, y: 350, zoom: 1 }}
+          edgeTypes={edgeTypes}
         >
           <Controls />
           <MiniMap />
@@ -412,6 +482,67 @@ function GraphContent() {
             >
               Delete Device
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Edge Properties Modal */}
+      {selectedEdge && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10"
+        >
+          <div className="bg-white rounded-lg p-6 w-96 relative">
+            <button
+              onClick={() => setSelectedEdge(null)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+            >
+              <X size={20} />
+            </button>
+            <h2 className="text-xl font-bold mb-4">Connection Properties</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Label
+                </label>
+                <input
+                  className="w-full border border-gray-300 rounded-md p-2"
+                  type="text"
+                  value={selectedEdge.data?.label || ''}
+                  onChange={(e) => {
+                    setEdges((eds) =>
+                      eds.map((ed) =>
+                        ed.id === selectedEdge.id
+                          ? { ...ed, data: { ...ed.data, label: e.target.value } }
+                          : ed
+                      )
+                    );
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-2">
+              <button
+                onClick={() => {
+                  setSelectedEdge(null);
+                }}
+                className="w-full bg-blue-500 text-white p-2 rounded-md"
+              >
+                Save
+              </button>
+
+              <button
+                onClick={() => {
+                  setEdges((eds) =>
+                    eds.filter((edge) => edge.id !== selectedEdge.id)
+                  );
+                  setSelectedEdge(null);
+                }}
+                className="w-full bg-red-500 text-white p-2 rounded-md"
+              >
+                Delete Connection
+              </button>
+            </div>
           </div>
         </div>
       )}
