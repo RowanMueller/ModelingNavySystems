@@ -85,10 +85,15 @@ export default function UploadPage() {
               )}
             </div>
           </div>
-          <button className="w-full rounded-lg py-2 bg-red-500 hover:bg-red-600 text-white mt-4">
-            <span className="text-white" onClick={() => setFiles([])}>
-              Clear All
-            </span>
+          <button
+            className="w-full rounded-lg py-2 bg-red-500 hover:bg-red-600 text-white mt-4"
+            onClick={() => {
+              console.log("clearing files");
+              setFiles([]);
+              setSystemName("");
+            }}
+          >
+            Clear All
           </button>
           <button
             className="w-full rounded-lg py-2 bg-blue-500 hover:bg-blue-600 text-white mt-4"

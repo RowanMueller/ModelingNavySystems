@@ -44,6 +44,7 @@ function GraphContent() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [flowInstance, setFlowInstance] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
+  const [onDelete, setOnDelete] = useState(false);
   const focusedNodeRef = useRef(null);
   const [newProperty, setNewProperty] = useState("");
   const location = useLocation();
@@ -198,25 +199,7 @@ function GraphContent() {
         </button>
         <button
           onClick={() => {
-            axios
-              .delete(
-                `${import.meta.env.VITE_BASE_URL}/api/v1/${
-                  system.id
-                }/delete-system/`,
-                {
-                  headers: {
-                    Authorization: `Bearer ${localStorage.getItem(
-                      "access_token"
-                    )}`,
-                  },
-                }
-              )
-              .then((res) => {
-                navigate("/dashboard");
-              })
-              .catch((err) => {
-                console.log(err);
-              });
+            setOnDelete(true);
           }}
           className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-500 border border-transparent rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
@@ -252,6 +235,53 @@ function GraphContent() {
           <Background variant="dots" gap={12} size={1} />
         </ReactFlow>
       </div>
+
+      {onDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
+          <div className="bg-white rounded-lg p-6 w-96 relative">
+            <h2 className="text-xl font-bold mb-4">Delete System</h2>
+            <p className="mb-4">Are you sure you want to delete this system?</p>
+            <div className="flex gap-4 items-center justify-between">
+              <button
+                onClick={() => {
+                  setOnDelete(false);
+                }}
+                className="bg-blue-500 text-white px-4 py-2 rounded-md w-full"
+              >
+                Cancel
+              </button>
+              <button
+                className="bg-red-500 text-white px-4 py-2 rounded-md w-full"
+                onClick={() => {
+                  axios
+                    .delete(
+                      `${import.meta.env.VITE_BASE_URL}/api/v1/${
+                        system.id
+                      }/delete-system/`,
+                      {
+                        headers: {
+                          Authorization: `Bearer ${localStorage.getItem(
+                            "access_token"
+                          )}`,
+                        },
+                      }
+                    )
+                    .then((res) => {
+                      toast.success("System deleted successfully");
+                      navigate("/dashboard");
+                    })
+                    .catch((err) => {
+                      toast.error("Error deleting system");
+                      console.log(err);
+                    });
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Device Properties Modal */}
       {selectedNode && (
