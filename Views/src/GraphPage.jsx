@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ReactFlow,
   MiniMap,
@@ -7,11 +7,13 @@ import {
   useNodesState,
   useEdgesState,
   addEdge,
+  ReactFlowProvider,
 } from "@xyflow/react";
-import { useNavigate } from "react-router-dom";
-import { Plus, Save, Download, X } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Plus, Save, Download, X, Trash } from "lucide-react";
 import "@xyflow/react/dist/style.css";
 import axios from "axios";
+import { toast } from "react-hot-toast";
 
 // const initialNodes = [
 //   {
@@ -28,12 +30,27 @@ import axios from "axios";
 const initialNodes = [];
 const initialEdges = [];
 
-export default function GraphPage({ id, name, version }) {
+export default function GraphPage() {
+  return (
+    <ReactFlowProvider>
+      <GraphContent />
+    </ReactFlowProvider>
+  );
+}
+
+function GraphContent() {
   const navigate = useNavigate();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [flowInstance, setFlowInstance] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
+  const focusedNodeRef = useRef(null);
+  const [newProperty, setNewProperty] = useState("");
+  const location = useLocation();
+
+  const system = location.state.system;
+
+  const popupRef = useRef(null);
 
   const onConnect = useCallback(
     (params) => setEdges((eds) => addEdge(params, eds)),
@@ -42,18 +59,69 @@ export default function GraphPage({ id, name, version }) {
 
   useEffect(() => {
     axios
-      .get(`${import.meta.env.VITE_BASE_URL}/api/v1/get-devices/`)
+      .get(`${import.meta.env.VITE_BASE_URL}/api/v1/${system.id}/get-devices`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+        },
+      })
       .then((res) => {
-        const newNodes = res.data.map((device, i) => ({
-          id: String(i + 1),
-          position: { x: 0, y: 100 * (i + 1) },
-          data: {
-            label: device.device_name || `Device ${i + 1}`,
-            ...device, // Spread the device data into the node's data object
-          },
-        }));
+        const newNodes = res.data.map((device, i) => {
+          const { AdditionalAsJson, ...deviceData } = device;
+          return {
+            id: String(i + 1),
+            position: { x: 0, y: 100 * (i + 1) },
+            data: {
+              label: device.device_name || `Device ${i + 1}`,
+              ...deviceData, // Spread the device data without AdditionalAsJson
+              ...(AdditionalAsJson || {}), // Spread the AdditionalAsJson contents so that we can display it in the node properties as normal
+            },
+          };
+        });
         setNodes(newNodes);
       });
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setSelectedNode(false);
+      }
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        event.key === "d" &&
+        focusedNodeRef.current
+      ) {
+        event.preventDefault();
+        setNodes((nds) => [
+          ...nds,
+          {
+            id: `new-${String(nds.length + 1)}`,
+            position: {
+              x: focusedNodeRef.current.position.x + 300,
+              y: focusedNodeRef.current.position.y,
+            },
+            data: {
+              ...focusedNodeRef.current.data,
+              label: `${focusedNodeRef.current.data.label} (copy)`,
+            },
+          },
+        ]);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  const onNodeDragStart = useCallback((event, node) => {
+    console.log("Node drag started - node:", node);
+    focusedNodeRef.current = node;
+  }, []);
+
+  const onNodeDragStop = useCallback((event, node) => {
+    console.log("Node drag stopped:", node);
+    focusedNodeRef.current = node;
   }, []);
 
   const handleSave = async () => {
@@ -71,7 +139,7 @@ export default function GraphPage({ id, name, version }) {
       <div className="absolute top-0 left-0 z-10 w-[300px] h-full bg-white border-r border-gray-200 p-4 flex flex-col gap-4 shadow-lg">
         <button
           onClick={() => navigate("/dashboard")}
-          className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
           <svg
             className="w-5 h-5 mr-2"
@@ -89,16 +157,24 @@ export default function GraphPage({ id, name, version }) {
           Back
         </button>
         <button
-          onClick={() =>
+          onClick={() => {
+            flowInstance.setCenter(0, 0, {
+              zoom: 1,
+              duration: 1000,
+            });
+
             setNodes((nds) => [
               ...nds,
               {
-                id: String(nds.length + 1),
-                position: { x: 0, y: 100 * (nds.length + 1) },
-                data: { label: `Device ${nds.length + 1}` },
+                id: `new-${String(nds.length + 1)}`,
+                position: {
+                  x: 0,
+                  y: 0,
+                },
+                data: { label: "New Device", SystemVersion: system.Version },
               },
-            ])
-          }
+            ]);
+          }}
           className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
         >
           <Plus />
@@ -106,7 +182,7 @@ export default function GraphPage({ id, name, version }) {
         </button>
         <button
           onClick={handleSave}
-          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
           <Save />
           <span className="ml-2">Save Graph</span>
@@ -115,17 +191,44 @@ export default function GraphPage({ id, name, version }) {
           onClick={() => {
             //TODO -> Download SysML file
           }}
-          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
           <Download />
           <span className="ml-2">Download SysML file</span>
         </button>
         <button
           onClick={() => {
+            axios
+              .delete(
+                `${import.meta.env.VITE_BASE_URL}/api/v1/${
+                  system.id
+                }/delete-system/`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${localStorage.getItem(
+                      "access_token"
+                    )}`,
+                  },
+                }
+              )
+              .then((res) => {
+                navigate("/dashboard");
+              })
+              .catch((err) => {
+                console.log(err);
+              });
+          }}
+          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-500 border border-transparent rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          <Trash />
+          <span className="ml-2">Delete System</span>
+        </button>
+        <button
+          onClick={() => {
             console.log(nodes);
             console.log(edges);
           }}
-          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
           <span className="ml-2">Debug print</span>
         </button>
@@ -139,8 +242,10 @@ export default function GraphPage({ id, name, version }) {
           onConnect={onConnect}
           onInit={setFlowInstance}
           onNodeClick={onNodeClick}
+          onNodeDragStart={onNodeDragStart}
+          onNodeDragStop={onNodeDragStop}
           className="w-full h-full"
-          defaultViewport={{ x: 350, y: 350, zoom: 5 }}
+          defaultViewport={{ x: 350, y: 350, zoom: 1 }}
         >
           <Controls />
           <MiniMap />
@@ -148,9 +253,12 @@ export default function GraphPage({ id, name, version }) {
         </ReactFlow>
       </div>
 
-      {/* Node Properties Modal */}
+      {/* Device Properties Modal */}
       {selectedNode && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div
+          ref={popupRef}
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10"
+        >
           <div className="bg-white rounded-lg p-6 w-96 relative">
             <button
               onClick={() => setSelectedNode(null)}
@@ -158,46 +266,33 @@ export default function GraphPage({ id, name, version }) {
             >
               <X size={20} />
             </button>
-            <h2 className="text-xl font-bold mb-4">Node Properties</h2>
+            <h2 className="text-xl font-bold mb-4">Device Properties</h2>
             <div className="space-y-4 max-h-[500px] overflow-y-auto">
               {Object.keys(selectedNode.data).map((key) => {
-                if (key === "AdditionalAsJson") {
-                  console.log(selectedNode.data[key]);
-                  return Object.keys(selectedNode.data[key]).map((item) => {
-                    return (
-                      <div key={item}>
-                        <label className="block text-sm font-medium text-gray-700">
-                          {item}
-                        </label>
-                        <input
-                          className="w-full border border-gray-300 rounded-md p-2"
-                          type="text"
-                          disabled={key === "id"}
-                          value={selectedNode.data[key][item] || ""}
-                          onChange={(e) => {
-                            setSelectedNode((nds) => ({
-                              ...nds,
-                              data: { ...nds.data, [key]: e.target.value },
-                            }));
-                          }}
-                        />
-                        {/* {typeof selectedNode.data[key] === 'object'
-                      ? JSON.stringify(selectedNode.data[key])
-                      : String(selectedNode.data[key])}
-                  </p> */}
-                      </div>
-                    );
-                  });
-                }
                 return (
                   <div key={key}>
-                    <label className="block text-sm font-medium text-gray-700">
-                      {key}
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="block text-sm font-medium text-gray-700">
+                        {key}
+                      </label>
+                      <button
+                        className="text-gray-500 hover:text-gray-700"
+                        onClick={() => {
+                          const newData = { ...selectedNode.data };
+                          delete newData[key];
+                          setSelectedNode((nds) => ({
+                            ...nds,
+                            data: newData,
+                          }));
+                        }}
+                      >
+                        <X size={20} />
+                      </button>
+                    </div>
                     <input
                       className="w-full border border-gray-300 rounded-md p-2"
                       type="text"
-                      disabled={key === "id"}
+                      disabled={key === "id" || key === "SystemVersion"}
                       value={selectedNode.data[key] || ""}
                       onChange={(e) => {
                         setSelectedNode((nds) => ({
@@ -209,11 +304,52 @@ export default function GraphPage({ id, name, version }) {
                     {/* {typeof selectedNode.data[key] === 'object'
                       ? JSON.stringify(selectedNode.data[key])
                       : String(selectedNode.data[key])}
-                  </p> */}
+                    </p> */}
                   </div>
                 );
               })}
             </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Property name"
+                className="w-full border border-gray-300 rounded-md px-2 mt-4"
+                onChange={(e) => setNewProperty(e.target.value)}
+              ></input>
+              <button
+                onClick={() => {
+                  if (Object.keys(selectedNode.data).includes(newProperty)) {
+                    toast.error("Property already exists");
+                    return;
+                  }
+                  if (newProperty === "") {
+                    toast.error("Property name cannot be empty");
+                    return;
+                  }
+                  setSelectedNode((nds) => ({
+                    ...nds,
+                    data: { ...nds.data, [newProperty]: "" },
+                  }));
+                }}
+                className="w-full bg-blue-500 text-white p-2 rounded-md mt-4"
+              >
+                Add
+              </button>
+            </div>
+
+            <button
+              onClick={() => {
+                setSelectedNode(null);
+                setNodes((nds) =>
+                  nds
+                    .filter((node) => node.id !== selectedNode.id)
+                    .concat(selectedNode)
+                );
+              }}
+              className="w-full bg-blue-500 text-white p-2 rounded-md mt-4"
+            >
+              Save
+            </button>
           </div>
         </div>
       )}

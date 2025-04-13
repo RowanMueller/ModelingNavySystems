@@ -74,7 +74,7 @@ class Device(models.Model):
     Floor = models.CharField(max_length=100, null=True, blank=True)
     RoomNumber = models.CharField(max_length=100, null=True, blank=True)
     AdditionalAsJson = models.JSONField(null=True, blank=True)
-    system = models.ForeignKey(System, on_delete=models.CASCADE, related_name="devices", default="1")
+    System = models.ForeignKey(System, on_delete=models.CASCADE, related_name="devices", default="1")
     Xposition = models.FloatField(null=True, blank=True, default=0)
     Yposition = models.FloatField(null=True, blank=True, default=0) 
 

@@ -1,111 +1,117 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "./authContext";
 import { Plus, Search, LogOut } from "lucide-react";
+import axios from "axios";
+
 export default function Dashboard() {
   const [systems, setSystems] = useState([
-    {
-      id: 1,
-      name: "System 1",
-      total_nodes: 10,
-      total_edges: 10,
-      preview_image: "https://via.placeholder.com/150",
-    },
-    {
-      id: 2,
-      name: "System 2",
-      total_nodes: 10,
-      total_edges: 10,
-      preview_image: "https://via.placeholder.com/150",
-    },
-    {
-      id: 3,
-      name: "System 3",
-      total_nodes: 10,
-      total_edges: 10,
-      preview_image: "https://via.placeholder.com/150",
-    },
-    {
-      id: 4,
-      name: "System 4",
-      total_nodes: 10,
-      total_edges: 10,
-      preview_image: "https://via.placeholder.com/150",
-    },
-    {
-      id: 5,
-      name: "System 5",
-      total_nodes: 10,
-      total_edges: 10,
-      preview_image: "https://via.placeholder.com/150",
-    },
-    {
-      id: 6,
-      name: "System 6",
-      total_nodes: 10,
-      total_edges: 10,
-      preview_image: "https://via.placeholder.com/150",
-    },
-    {
-      id: 7,
-      name: "System 7",
-      total_nodes: 10,
-      total_edges: 10,
-      preview_image: "https://via.placeholder.com/150",
-    },
-    {
-      id: 8,
-      name: "System 8",
-      total_nodes: 10,
-      total_edges: 10,
-      preview_image: "https://via.placeholder.com/150",
-    },
+    // {
+    //   id: 1,
+    //   name: "System 1",
+    //   total_nodes: 10,
+    //   total_edges: 10,
+    //   preview_image: "https://via.placeholder.com/150",
+    // },
+    // {
+    //   id: 2,
+    //   name: "System 2",
+    //   total_nodes: 10,
+    //   total_edges: 10,
+    //   preview_image: "https://via.placeholder.com/150",
+    // },
+    // {
+    //   id: 3,
+    //   name: "System 3",
+    //   total_nodes: 10,
+    //   total_edges: 10,
+    //   preview_image: "https://via.placeholder.com/150",
+    // },
+    // {
+    //   id: 4,
+    //   name: "System 4",
+    //   total_nodes: 10,
+    //   total_edges: 10,
+    //   preview_image: "https://via.placeholder.com/150",
+    // },
+    // {
+    //   id: 5,
+    //   name: "System 5",
+    //   total_nodes: 10,
+    //   total_edges: 10,
+    //   preview_image: "https://via.placeholder.com/150",
+    // },
+    // {
+    //   id: 6,
+    //   name: "System 6",
+    //   total_nodes: 10,
+    //   total_edges: 10,
+    //   preview_image: "https://via.placeholder.com/150",
+    // },
+    // {
+    //   id: 7,
+    //   name: "System 7",
+    //   total_nodes: 10,
+    //   total_edges: 10,
+    //   preview_image: "https://via.placeholder.com/150",
+    // },
+    // {
+    //   id: 8,
+    //   name: "System 8",
+    //   total_nodes: 10,
+    //   total_edges: 10,
+    //   preview_image: "https://via.placeholder.com/150",
+    // },
   ]);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
-  const { user } = useAuth();
 
   useEffect(() => {
     fetchSystems();
   }, []);
 
   const fetchSystems = async () => {
-    // try {
-    //   const response = await fetch(`${import.meta.env.VITE_BASE_URL}/api/v1/systems/`, {
-    //     headers: {
-    //       'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-    //       'Content-Type': 'application/json',
-    //     },
-    //   });
-    //   if (response.ok) {
-    //     const data = await response.json();
-    //     setSystems(data);
-    //   }
-    // } catch (error) {
-    //   console.error('Error fetching systems:', error);
-    // }
+    try {
+      await axios
+        .get(`${import.meta.env.VITE_BASE_URL}/api/v1/get-systems/`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          },
+        })
+        .then((response) => {
+          console.log(response.data[0]);
+          setSystems(response.data);
+        })
+        .catch((error) => {
+          console.error("Error fetching systems:", error);
+        });
+    } catch (error) {
+      console.error("Error fetching systems:", error);
+    }
   };
 
   const SystemCard = ({ system }) => (
-    <div className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
+    <div
+      className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
       onClick={() => {
-        navigate(`/system/${system.id}`);
+        navigate(`/system/${system.id}`, {
+          state: { system: system},
+        });
       }}
     >
       <h3 className="text-xl font-semibold text-gray-800 mb-4">
-        {system.name}
+        {system.Name}
       </h3>
       <div className="space-y-2 text-gray-600">
-        <p>Total Nodes: {system.total_nodes}</p>
-        <p>Total Edges: {system.total_edges}</p>
+        <p>Total Nodes: {system.NodeCount}</p>
+        <p>Total Edges: {system.EdgeCount}</p>
       </div>
-      <div className="mt-4">
+      {/* <div className="mt-4">
         <img
           src={system.preview_image}
           alt={`${system.name} preview`}
           className="w-full h-48 object-cover rounded-md bg-gray-100"
         />
-      </div>
+      </div> */}
     </div>
   );
 
@@ -168,7 +174,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {systems
             .filter((system) =>
-              system.name.toLowerCase().includes(searchQuery.toLowerCase())
+              system.Name.toLowerCase().includes(searchQuery.toLowerCase())
             )
             .map((system) => (
               <SystemCard key={system.id} system={system} />

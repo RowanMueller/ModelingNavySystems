@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from rest_framework import generics
 from .models import Device, System 
 from .serializers import DeviceSerializer, ConnectionSerializer, SystemSerializer
@@ -11,34 +10,27 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Connection, Device, System
+from rest_framework.permissions import IsAuthenticated
+from functools import wraps
+from django.http import JsonResponse
 
 import re
-from rest_framework.permissions import IsAuthenticated
 import pandas as pd
-import os
 from django.contrib.auth.models import User
 
 # Create your views here.
 
 class DeviceListCreate(generics.ListCreateAPIView):
-    # 
+    permission_classes = [IsAuthenticated]
     queryset = Device.objects.all()
     serializer_class = DeviceSerializer
 
 class GetDevicesView(APIView):
+    permission_classes = [IsAuthenticated]
+    
     def get(self, request, systemId, *args, **kwargs):
-        current_user = request.user
-        if not current_user.is_authenticated:
-            return Response(
-                {"error": "User not authenticated"},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-        user_id = current_user.id
-        if user_id is None:  # Rare, but adds safety
-            return Response(
-                {"error": "Invalid user ID"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        user_id = request.user.id
+
         if not systemId:  # Validate systemId
             return Response(
                 {"error": "System ID is required"},
@@ -47,7 +39,7 @@ class GetDevicesView(APIView):
 
         try:
             system = System.objects.get(id=systemId, User_id=user_id)
-            devices = Device.objects.filter(system=system)
+            devices = Device.objects.filter(System=system)
             serializer = DeviceSerializer(devices, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except System.DoesNotExist:
@@ -62,14 +54,9 @@ class GetDevicesView(APIView):
             )
 
 class GetConnectionsView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request, userId, systemId, *args, **kwargs):
-        current_user = request.user
-        if current_user == None:
-            return Response(
-                {"error": "User not authenticated"},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-        user_id = current_user.id
+        user_id = request.user.id
         try:
             # Verify the System exists for the given userId
             system = System.objects.get(id=systemId, User_id=user_id)
@@ -89,14 +76,9 @@ class GetConnectionsView(APIView):
             )
 
 class DeleteSystemView(APIView):
+    permission_classes = [IsAuthenticated]
     def delete(self, request, systemId, *args, **kwargs):
-        current_user = request.user
-        if current_user == None:
-            return Response(
-                {"error": "User not authenticated"},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-        user_id = current_user.id
+        user_id = request.user.id
 
         try:
             # Fetch the System for the given userId and systemId
@@ -112,6 +94,9 @@ class DeleteSystemView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
+            print("_--------------------------------")
+            print(e);
+            print("_--------------------------------")
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -120,6 +105,8 @@ class DeleteSystemView(APIView):
 
 # Fetches devices and converts to JSON
 class GetAllDevices(APIView):
+    permission_classes = [IsAuthenticated]
+    
     # Custom API view to fetch all devices
     def get(self, request, *args, **kwargs):
         devices = Device.objects.all()
@@ -128,9 +115,16 @@ class GetAllDevices(APIView):
 
 # connects to urls.py
 class FileUploadView(APIView):
+    permission_classes = [IsAuthenticated]
     def post(self, request, *args, **kwargs):
         if 'files' not in request.FILES:
             return Response({"error": "No files provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        name = request.data.get('name')
+        if name is None:
+            return Response({"error": "System name is required"}, status=status.HTTP_400_BAD_REQUEST)
+        system = System(User=request.user, Name=name)
+        system.save()
 
         uploaded_files = []
         for file in request.FILES.getlist('files'):  # Handle multiple files
@@ -180,13 +174,16 @@ class FileUploadView(APIView):
                     BuildingName=row.get('Building Name'), 
                     Floor=row.get('Floor'),
                     RoomNumber=row.get('Room Number'), 
-                    AdditionalAsJson=row.get('Additional JSON')
+                    AdditionalAsJson=row.get('Additional JSON'),
+                    SystemVersion=1,
+                    System=system
                 )
                 device.save()
 
         return Response({
             "message": "Files uploaded successfully",
-            "files": uploaded_files
+            "files": uploaded_files,
+            "system": SystemSerializer(system).data
         }, status=status.HTTP_201_CREATED)
     
     def read_sysml(self, file): #TODO have it so it parses data when it's on the next line 
@@ -253,23 +250,35 @@ class FileUploadView(APIView):
         return df
 
 class GetAllSystems(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request, *args, **kwargs):
         user = request.user
-        if not user:
-            return Response({"error": "Missing user_id"}, status=status.HTTP_400_BAD_REQUEST)
         systems = System.objects.filter(User__id=user.id)
         serializer = SystemSerializer(systems, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+class CreateSystemView(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        version = request.data.get('version') # version could be 0
+        name = request.data.get('name')
+        if version is None:
+            version = 1
+        system = System(User=user, Version=version, Name=name)
+        system.save()
+        return Response(status=status.HTTP_201_CREATED, data=SystemSerializer(system).data)
+
 class SystemDetailView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request, *args, **kwargs):
-        user_id = request.query_params.get('user_id')
+        user = request.user
+        user_id = user.id
         system_id = request.query_params.get('system_id')
 
-        if not user_id or not system_id:
+        if not system_id:
             return Response({"error": "user_id and system_id are required."},
                             status=status.HTTP_400_BAD_REQUEST)
-
         try:
             user = User.objects.get(id=user_id)
             system = System.objects.get(id=system_id)
@@ -285,11 +294,3 @@ class SystemDetailView(APIView):
 
         serializer = SystemSerializer(system)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-# class GetAllSystems(APIView):
-#     permission_classes = [IsAuthenticated]  # only logged-in users
-#     def get(self, request, *args, **kwargs):
-#         user = request.user  # this gives you the currently logged-in user
-#         systems = System.objects.filter(Users=user)  # only systems user is part of
-#         serializer = SystemSerializer(systems, many=True)
-#         return Response(serializer.data, status=status.HTTP_200_OK) 
