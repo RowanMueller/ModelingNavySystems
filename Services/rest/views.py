@@ -55,7 +55,7 @@ class GetDevicesView(APIView):
 
 class GetConnectionsView(APIView):
     permission_classes = [IsAuthenticated]
-    def get(self, request, userId, systemId, *args, **kwargs):
+    def get(self, request, systemId, *args, **kwargs):
         user_id = request.user.id
         try:
             # Verify the System exists for the given userId

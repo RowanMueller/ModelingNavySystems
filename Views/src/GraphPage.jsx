@@ -115,24 +115,37 @@ function GraphContent() {
     };
   }, []);
 
-  const onNodeDragStart = useCallback((event, node) => {
-    console.log("Node drag started - node:", node);
-    focusedNodeRef.current = node;
-  }, []);
-
-  const onNodeDragStop = useCallback((event, node) => {
-    console.log("Node drag stopped:", node);
-    focusedNodeRef.current = node;
-  }, []);
-
   const handleSave = async () => {
     if (!flowInstance) return;
 
-    //TODO: Save the graph to the database
+    axios.post(
+      `${import.meta.env.VITE_BASE_URL}/api/v1/${system.id}/save-graph`,
+      {
+        version: system.Version,
+        devices: nodes,
+        connections: edges,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+        },
+      }
+    );
   };
 
   const onNodeClick = useCallback((event, node) => {
+    console.log("Node clicked:", node);
     setSelectedNode(node);
+  }, []);
+
+  const onNodeMouseEnter = useCallback((event, node) => {
+    console.log("Node mouse entered:", node);
+    focusedNodeRef.current = node;
+  }, []);
+
+  const onNodeMouseLeave = useCallback((event, node) => {
+    console.log("Node mouse left:", node);
+    focusedNodeRef.current = null;
   }, []);
 
   return (
@@ -225,8 +238,8 @@ function GraphContent() {
           onConnect={onConnect}
           onInit={setFlowInstance}
           onNodeClick={onNodeClick}
-          onNodeDragStart={onNodeDragStart}
-          onNodeDragStop={onNodeDragStop}
+          onNodeMouseEnter={onNodeMouseEnter}
+          onNodeMouseLeave={onNodeMouseLeave}
           className="w-full h-full"
           defaultViewport={{ x: 350, y: 350, zoom: 1 }}
         >
@@ -369,16 +382,35 @@ function GraphContent() {
 
             <button
               onClick={() => {
-                setSelectedNode(null);
                 setNodes((nds) =>
                   nds
                     .filter((node) => node.id !== selectedNode.id)
                     .concat(selectedNode)
                 );
+                setSelectedNode(null);
               }}
               className="w-full bg-blue-500 text-white p-2 rounded-md mt-4"
             >
               Save
+            </button>
+
+            <button
+              onClick={() => {
+                setNodes((nds) =>
+                  nds.filter((node) => node.id !== selectedNode.id)
+                );
+                setEdges((eds) =>
+                  eds.filter(
+                    (edge) =>
+                      edge.source !== selectedNode.id &&
+                      edge.target !== selectedNode.id
+                  )
+                );
+                setSelectedNode(null);
+              }}
+              className="w-full bg-red-500 text-white p-2 rounded-md mt-4"
+            >
+              Delete Device
             </button>
           </div>
         </div>
