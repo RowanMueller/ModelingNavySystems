@@ -28,7 +28,7 @@ class DeviceListCreate(generics.ListCreateAPIView):
 class GetDevicesView(APIView):
     permission_classes = [IsAuthenticated]
     
-    def get(self, request, systemId, *args, **kwargs):
+    def get(self, request, systemId, version, *args, **kwargs):
         user_id = request.user.id
 
         if not systemId:  # Validate systemId
@@ -39,7 +39,7 @@ class GetDevicesView(APIView):
 
         try:
             system = System.objects.get(id=systemId, User_id=user_id)
-            devices = Device.objects.filter(System=system)
+            devices = Device.objects.filter(System=system, SystemVersion=version)
             serializer = DeviceSerializer(devices, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except System.DoesNotExist:
@@ -55,13 +55,13 @@ class GetDevicesView(APIView):
 
 class GetConnectionsView(APIView):
     permission_classes = [IsAuthenticated]
-    def get(self, request, systemId, *args, **kwargs):
+    def get(self, request, systemId, version, *args, **kwargs):
         user_id = request.user.id
         try:
             # Verify the System exists for the given userId
             system = System.objects.get(id=systemId, User_id=user_id)
             # Fetch all Connections for the System
-            connections = Connection.objects.filter(System=system)
+            connections = Connection.objects.filter(System=system, SystemVersion=version)
             serializer = ConnectionSerializer(connections, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except System.DoesNotExist:
@@ -94,9 +94,7 @@ class DeleteSystemView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            print("_--------------------------------")
             print(e);
-            print("_--------------------------------")
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR

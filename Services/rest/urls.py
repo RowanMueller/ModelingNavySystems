@@ -15,6 +15,6 @@ urlpatterns = [
     path('create-system/', views.CreateSystemView.as_view(), name='create-system'),
     path('<int:systemId>/save-graph/', views.SaveSystem.as_view(), name='save-graph'),
     path('<int:systemId>/delete-system/', views.DeleteSystemView.as_view(), name='delete-system'),
-    path('<int:systemId>/get-devices/', views.GetDevicesView.as_view(), name='get-devices-system'),
-    path('<int:systemId>/get-connections/', views.GetConnectionsView.as_view(), name='get-connections-system'),
+    path('<int:systemId>/<int:version>/get-devices/', views.GetDevicesView.as_view(), name='get-devices-system'),
+    path('<int:systemId>/<int:version>/get-connections/', views.GetConnectionsView.as_view(), name='get-connections-system'),
 ]

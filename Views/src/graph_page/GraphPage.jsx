@@ -83,12 +83,17 @@ function GraphContent() {
 
   useEffect(() => {
     axios
-      .get(`${import.meta.env.VITE_BASE_URL}/api/v1/${system.id}/get-devices`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-        },
-      })
+      .get(
+        `${import.meta.env.VITE_BASE_URL}/api/v1/${system.id}/${
+          system.Version
+        }/get-devices`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          },
+        }
+      )
       .then((res) => {
         const newNodes = res.data.map((device, i) => {
           const { AdditionalAsJson, ...deviceData } = device;
