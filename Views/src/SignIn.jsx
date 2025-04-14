@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "./authContext";
+import axios from "axios";
 
 export default function SignIn() {
   const [username, setUsername] = useState("");
@@ -13,34 +14,41 @@ export default function SignIn() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    
+
     console.log(import.meta.env.VITE_BASE_URL);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/api/v1/login/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+      const { data } = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/api/v1/login/`,
+        { username, password },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Login response:", {
+        ...data,
+        access: data.access ? "HIDDEN" : undefined,
       });
 
-      const data = await response.json();
-      console.log('Login response:', { ...data, access: data.access ? 'HIDDEN' : undefined });
-
-      if (response.ok) {
-        if (!data.access || !data.refresh) {
-          setError("Invalid response from server: missing tokens");
-          return;
-        }
-        login(data);
-        // Navigate to the attempted page or default to /upload
-        const from = location.state?.from?.pathname || "/upload";
-        navigate(from, { replace: true });
-      } else {
-        setError(data.error || data.detail || "Login failed");
+      if (!data.access || !data.refresh) {
+        setError("Invalid response from server: missing tokens");
+        return;
       }
+
+      login(data);
+      // Navigate to the attempted page or default to /upload
+      const from = location.state?.from?.pathname || "/dashboard";
+      navigate(from, { replace: true });
     } catch (err) {
-      console.error('Login error:', err);
-      setError("An error occurred during login");
+      console.error("Login error:", err);
+      setError(
+        err.response?.data?.detail ||
+          err.response?.data?.error ||
+          "An error occurred during login"
+      );
     }
   };
 
@@ -54,7 +62,10 @@ export default function SignIn() {
               {error}
             </div>
           )}
-          <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center w-full space-y-4">
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col items-center justify-center w-full space-y-4"
+          >
             <input
               type="text"
               placeholder="Username"

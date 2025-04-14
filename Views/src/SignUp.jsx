@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./authContext";
+import axios from "axios";
 
 export default function SignUp() {
   const [email, setEmail] = useState("");
@@ -21,43 +22,43 @@ export default function SignUp() {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/api/v1/register/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const { data } = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/api/v1/register/`,
+        {
           email,
           username,
-          password
-        }),
-      });
-
-      const data = await response.json();
-      console.log('Registration response:', { 
-        ...data, 
-        access: data.access ? 'HIDDEN' : undefined,
-        user: data.user ? { ...data.user, password: 'HIDDEN' } : undefined
-      });
-
-      if (response.ok) {
-        if (!data.access || !data.refresh) {
-          setError("Invalid response from server: missing tokens");
-          return;
+          password,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
         }
-        login(data);
-        navigate("/upload");
-      } else {
-        const errorMessage = 
-          data.username?.[0] || 
-          data.email?.[0] || 
-          data.password?.[0] ||
-          data.error ||
-          data.detail ||
-          "Registration failed";
-        setError(errorMessage);
+      );
+
+      console.log("Registration response:", {
+        ...data,
+        access: data.access ? "HIDDEN" : undefined,
+        user: data.user ? { ...data.user, password: "HIDDEN" } : undefined,
+      });
+
+      if (!data.access || !data.refresh) {
+        setError("Invalid response from server: missing tokens");
+        return;
       }
+      login(data);
+      navigate("/dashboard");
     } catch (err) {
-      console.error('Registration error:', err);
-      setError("An error occurred during registration");
+      console.error("Registration error:", err);
+      const errorData = err.response?.data;
+      const errorMessage =
+        errorData?.username?.[0] ||
+        errorData?.email?.[0] ||
+        errorData?.password?.[0] ||
+        errorData?.error ||
+        errorData?.detail ||
+        "An error occurred during registration";
+      setError(errorMessage);
     }
   };
 
@@ -71,7 +72,10 @@ export default function SignUp() {
               {error}
             </div>
           )}
-          <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center w-full space-y-4">
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col items-center justify-center w-full space-y-4"
+          >
             <input
               type="email"
               placeholder="Email"

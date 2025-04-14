@@ -158,17 +158,14 @@ function GraphContent() {
   };
 
   const onNodeClick = useCallback((event, node) => {
-    console.log("Node clicked:", node);
     setSelectedNode(node);
   }, []);
 
   const onNodeMouseEnter = useCallback((event, node) => {
-    console.log("Node mouse entered:", node);
     focusedNodeRef.current = node;
   }, []);
 
   const onNodeMouseLeave = useCallback((event, node) => {
-    console.log("Node mouse left:", node);
     focusedNodeRef.current = null;
   }, []);
 
@@ -243,7 +240,7 @@ function GraphContent() {
           <Trash />
           <span className="ml-2">Delete System</span>
         </button>
-        <button
+        {/* <button
           onClick={() => {
             console.log(nodes);
             console.log(edges);
@@ -251,7 +248,7 @@ function GraphContent() {
           className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
           <span className="ml-2">Debug print</span>
-        </button>
+        </button> */}
       </div>
       <div className="w-full h-full">
         <ReactFlow

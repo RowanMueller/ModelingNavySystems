@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import axios from "axios";
 
 const AuthContext = createContext(null);
 
@@ -13,25 +14,19 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem("access_token");
       if (token) {
         try {
-          const response = await fetch(
+          await axios.post(
             `${import.meta.env.VITE_BASE_URL}/api/v1/auth/verify/`,
+            { token },
             {
-              method: "POST",
               headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${token}`,
               },
-              body: JSON.stringify({ token }),
             }
           );
 
-          if (response.ok) {
-            // If token is valid, set the user state
-            setUser({ loggedIn: true });
-          } else {
-            // If token is invalid, try to refresh it
-            await refreshAccessToken();
-          }
+          // If token is valid, set the user state
+          setUser({ loggedIn: true });
         } catch (error) {
           console.error("Token verification failed:", error);
           await refreshAccessToken();
@@ -51,27 +46,19 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const response = await fetch(
+      const { data } = await axios.post(
         `${import.meta.env.VITE_BASE_URL}/api/v1/auth/refresh/`,
+        { refresh },
         {
-          method: "POST",
           headers: {
             "Content-Type": "application/json",
-            // authorization header is not needed for refresh
           },
-          body: JSON.stringify({ refresh }),
         }
       );
 
-      if (response.ok) {
-        const data = await response.json();
-        localStorage.setItem("access_token", data.access);
-        setUser({ loggedIn: true });
-        return true;
-      } else {
-        logout();
-        return false;
-      }
+      localStorage.setItem("access_token", data.access);
+      setUser({ loggedIn: true });
+      return true;
     } catch (error) {
       console.error("Token refresh failed:", error);
       logout();
