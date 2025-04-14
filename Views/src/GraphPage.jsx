@@ -3,7 +3,8 @@ import React, {
   useEffect,
   useRef,
   useState,
-  useMemo,
+  createContext,
+  useContext,
 } from "react";
 import {
   ReactFlow,
@@ -36,24 +37,97 @@ import { toast } from "react-hot-toast";
 // ];
 // const initialEdges = [{ id: "e1-2", source: "1", target: "2" }];
 
+const GraphContext = createContext(null);
+
+const useGraph = () => {
+  const context = useContext(GraphContext);
+  if (!context) {
+    throw new Error("useGraph must be used within a GraphProvider");
+  }
+  return context;
+};
+
 const initialNodes = [];
 const initialEdges = [];
+
+// Custom edge component defined outside the component
+const CustomEdge = ({
+  id,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+  data,
+}) => {
+  const { edges, setSelectedEdge } = useGraph();
+  const [edgePath, labelX, labelY] = getBezierPath({
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition,
+  });
+
+  return (
+    <>
+      <BaseEdge id={id} path={edgePath} />
+      <EdgeLabelRenderer>
+        <div
+          className="absolute -translate-x-1/2 -translate-y-1/2 bg-white p-1 rounded text-xs pointer-events-auto cursor-pointer"
+          style={{
+            transform: `translate(${labelX}px,${labelY}px)`,
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            const edge = edges.find((edge) => edge.id === id);
+            setSelectedEdge(edge);
+          }}
+        >
+          {data?.label || ""}
+        </div>
+      </EdgeLabelRenderer>
+    </>
+  );
+};
+
+// Define edgeTypes outside the component
+const edgeTypes = {
+  custom: CustomEdge,
+};
 
 export default function GraphPage() {
   return (
     <ReactFlowProvider>
-      <GraphContent />
+      <GraphProvider>
+        <GraphContent />
+      </GraphProvider>
     </ReactFlowProvider>
+  );
+}
+
+function GraphProvider({ children }) {
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [selectedEdge, setSelectedEdge] = useState(null);
+
+  return (
+    <GraphContext.Provider
+      value={{ edges, setEdges, onEdgesChange, selectedEdge, setSelectedEdge }}
+    >
+      {children}
+    </GraphContext.Provider>
   );
 }
 
 function GraphContent() {
   const navigate = useNavigate();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const { edges, setEdges, onEdgesChange, selectedEdge, setSelectedEdge } =
+    useGraph();
   const [flowInstance, setFlowInstance] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
-  const [selectedEdge, setSelectedEdge] = useState(null);
   const [onDelete, setOnDelete] = useState(false);
   const focusedNodeRef = useRef(null);
   const [newProperty, setNewProperty] = useState("");
@@ -62,59 +136,6 @@ function GraphContent() {
   const system = location.state.system;
 
   const popupRef = useRef(null);
-
-  // Custom edge component with label - moved outside the component render
-  const CustomEdge = useCallback(
-    ({
-      id,
-      sourceX,
-      sourceY,
-      targetX,
-      targetY,
-      sourcePosition,
-      targetPosition,
-      data,
-    }) => {
-      const [edgePath, labelX, labelY] = getBezierPath({
-        sourceX,
-        sourceY,
-        sourcePosition,
-        targetX,
-        targetY,
-        targetPosition,
-      });
-
-      return (
-        <>
-          <BaseEdge id={id} path={edgePath} />
-          <EdgeLabelRenderer>
-            <div
-              className="absolute -translate-x-1/2 -translate-y-1/2 bg-white p-1 rounded text-xs pointer-events-auto cursor-pointer"
-              style={{
-                transform: `translate(${labelX}px,${labelY}px)`,
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                const edge = edges.find((edge) => edge.id === id);
-                setSelectedEdge(edge);
-              }}
-            >
-              {data?.label || ""}
-            </div>
-          </EdgeLabelRenderer>
-        </>
-      );
-    },
-    [edges, setSelectedEdge]
-  );
-
-  // Memoize the edgeTypes object
-  const edgeTypes = useMemo(
-    () => ({
-      custom: CustomEdge,
-    }),
-    [CustomEdge]
-  );
 
   const onConnect = useCallback(
     (params) => {
@@ -128,9 +149,12 @@ function GraphContent() {
     [setEdges]
   );
 
-  const onEdgeClick = useCallback((event, edge) => {
-    setSelectedEdge(edge);
-  }, []);
+  const onEdgeClick = useCallback(
+    (event, edge) => {
+      setSelectedEdge(edge);
+    },
+    [setSelectedEdge]
+  );
 
   useEffect(() => {
     axios
@@ -356,7 +380,7 @@ function GraphContent() {
                         },
                       }
                     )
-                    .then((res) => {
+                    .then(() => {
                       toast.success("System deleted successfully");
                       navigate("/dashboard");
                     })
