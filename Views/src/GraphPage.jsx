@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState, useMemo } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useMemo,
+} from "react";
 import {
   ReactFlow,
   MiniMap,
@@ -58,64 +64,64 @@ function GraphContent() {
   const popupRef = useRef(null);
 
   // Custom edge component with label - moved outside the component render
-  const CustomEdge = useCallback(({
-    id,
-    sourceX,
-    sourceY,
-    targetX,
-    targetY,
-    sourcePosition,
-    targetPosition,
-    data,
-  }) => {
-    const [edgePath, labelX, labelY] = getBezierPath({
+  const CustomEdge = useCallback(
+    ({
+      id,
       sourceX,
       sourceY,
-      sourcePosition,
       targetX,
       targetY,
+      sourcePosition,
       targetPosition,
-    });
+      data,
+    }) => {
+      const [edgePath, labelX, labelY] = getBezierPath({
+        sourceX,
+        sourceY,
+        sourcePosition,
+        targetX,
+        targetY,
+        targetPosition,
+      });
 
-    return (
-      <>
-        <BaseEdge id={id} path={edgePath} />
-        <EdgeLabelRenderer>
-          <div
-            style={{
-              position: 'absolute',
-              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-              background: '#fff',
-              padding: '4px',
-              borderRadius: '4px',
-              fontSize: '12px',
-              pointerEvents: 'all',
-              cursor: 'pointer',
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              const edge = edges.find(edge => edge.id === id);
-              setSelectedEdge(edge);
-            }}
-          >
-            {data?.label || ''}
-          </div>
-        </EdgeLabelRenderer>
-      </>
-    );
-  }, [edges, setSelectedEdge]);
+      return (
+        <>
+          <BaseEdge id={id} path={edgePath} />
+          <EdgeLabelRenderer>
+            <div
+              className="absolute -translate-x-1/2 -translate-y-1/2 bg-white p-1 rounded text-xs pointer-events-auto cursor-pointer"
+              style={{
+                transform: `translate(${labelX}px,${labelY}px)`,
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                const edge = edges.find((edge) => edge.id === id);
+                setSelectedEdge(edge);
+              }}
+            >
+              {data?.label || ""}
+            </div>
+          </EdgeLabelRenderer>
+        </>
+      );
+    },
+    [edges, setSelectedEdge]
+  );
 
   // Memoize the edgeTypes object
-  const edgeTypes = useMemo(() => ({
-    custom: CustomEdge
-  }), [CustomEdge]);
+  const edgeTypes = useMemo(
+    () => ({
+      custom: CustomEdge,
+    }),
+    [CustomEdge]
+  );
 
   const onConnect = useCallback(
     (params) => {
       const newEdge = {
         ...params,
-        type: 'custom',
-        data: { label: 'New Connection' },
+        type: "custom",
+        data: { label: "New Connection" },
       };
       setEdges((eds) => addEdge(newEdge, eds));
     },
@@ -489,9 +495,7 @@ function GraphContent() {
 
       {/* Edge Properties Modal */}
       {selectedEdge && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10"
-        >
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
           <div className="bg-white rounded-lg p-6 w-96 relative">
             <button
               onClick={() => setSelectedEdge(null)}
@@ -508,15 +512,12 @@ function GraphContent() {
                 <input
                   className="w-full border border-gray-300 rounded-md p-2"
                   type="text"
-                  value={selectedEdge.data?.label || ''}
+                  value={selectedEdge.data?.label || ""}
                   onChange={(e) => {
-                    setEdges((eds) =>
-                      eds.map((ed) =>
-                        ed.id === selectedEdge.id
-                          ? { ...ed, data: { ...ed.data, label: e.target.value } }
-                          : ed
-                      )
-                    );
+                    setSelectedEdge((eds) => ({
+                      ...eds,
+                      data: { ...eds.data, label: e.target.value },
+                    }));
                   }}
                 />
               </div>
@@ -525,6 +526,19 @@ function GraphContent() {
             <div className="mt-4 space-y-2">
               <button
                 onClick={() => {
+                  setEdges((eds) =>
+                    eds.map((ed) =>
+                      ed.id === selectedEdge.id
+                        ? {
+                            ...ed,
+                            data: {
+                              ...ed.data,
+                              label: selectedEdge.data.label,
+                            },
+                          }
+                        : ed
+                    )
+                  );
                   setSelectedEdge(null);
                 }}
                 className="w-full bg-blue-500 text-white p-2 rounded-md"
