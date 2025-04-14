@@ -2,7 +2,7 @@ import "./App.css";
 import { Toaster } from "react-hot-toast";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Download from "./Download";
-import GraphPage from "./GraphPage";
+import GraphPage from "./graph_page/GraphPage";
 import SignIn from "./SignIn";
 import SignUp from "./SignUp";
 import Dashboard from "./Dashboard";

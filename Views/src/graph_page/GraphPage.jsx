@@ -1,29 +1,21 @@
-import React, {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  createContext,
-  useContext,
-} from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ReactFlow,
   MiniMap,
   Controls,
   Background,
   useNodesState,
-  useEdgesState,
   addEdge,
   ReactFlowProvider,
-  BaseEdge,
-  EdgeLabelRenderer,
-  getBezierPath,
 } from "@xyflow/react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Plus, Save, Download, X, Trash } from "lucide-react";
 import "@xyflow/react/dist/style.css";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import CustomEdge from "./CustomEdge";
+import useGraph from "./useGraph";
+import GraphProvider from "./GraphProvider";
 
 // const initialNodes = [
 //   {
@@ -37,61 +29,7 @@ import { toast } from "react-hot-toast";
 // ];
 // const initialEdges = [{ id: "e1-2", source: "1", target: "2" }];
 
-const GraphContext = createContext(null);
-
-const useGraph = () => {
-  const context = useContext(GraphContext);
-  if (!context) {
-    throw new Error("useGraph must be used within a GraphProvider");
-  }
-  return context;
-};
-
 const initialNodes = [];
-const initialEdges = [];
-
-// Custom edge component defined outside the component
-const CustomEdge = ({
-  id,
-  sourceX,
-  sourceY,
-  targetX,
-  targetY,
-  sourcePosition,
-  targetPosition,
-  data,
-}) => {
-  const { edges, setSelectedEdge } = useGraph();
-  const [edgePath, labelX, labelY] = getBezierPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-  });
-
-  return (
-    <>
-      <BaseEdge id={id} path={edgePath} />
-      <EdgeLabelRenderer>
-        <div
-          className="absolute -translate-x-1/2 -translate-y-1/2 bg-white p-1 rounded text-xs pointer-events-auto cursor-pointer"
-          style={{
-            transform: `translate(${labelX}px,${labelY}px)`,
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            const edge = edges.find((edge) => edge.id === id);
-            setSelectedEdge(edge);
-          }}
-        >
-          {data?.label || ""}
-        </div>
-      </EdgeLabelRenderer>
-    </>
-  );
-};
 
 // Define edgeTypes outside the component
 const edgeTypes = {
@@ -105,19 +43,6 @@ export default function GraphPage() {
         <GraphContent />
       </GraphProvider>
     </ReactFlowProvider>
-  );
-}
-
-function GraphProvider({ children }) {
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-  const [selectedEdge, setSelectedEdge] = useState(null);
-
-  return (
-    <GraphContext.Provider
-      value={{ edges, setEdges, onEdgesChange, selectedEdge, setSelectedEdge }}
-    >
-      {children}
-    </GraphContext.Provider>
   );
 }
 
