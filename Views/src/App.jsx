@@ -8,7 +8,7 @@ import SignUp from "./SignUp";
 import Dashboard from "./Dashboard";
 import { AuthProvider } from "./authContext";
 import { ProtectedRoute } from "./ProtectedRoute";
-import UploadPage from "./uploadPage/UploadPage";
+import UploadPage from "./UploadPage";
 
 function App() {
   return (
