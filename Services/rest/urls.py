@@ -13,6 +13,7 @@ urlpatterns = [
     path('auth/verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('get-systems/', views.GetAllSystems.as_view(), name='get-systems'),
     path('create-system/', views.CreateSystemView.as_view(), name='create-system'),
+    path('<int:systemId>/save-graph/', views.SaveSystem.as_view(), name='save-graph'),
     path('<int:systemId>/delete-system/', views.DeleteSystemView.as_view(), name='delete-system'),
     path('<int:systemId>/get-devices/', views.GetDevicesView.as_view(), name='get-devices-system'),
     path('<int:systemId>/get-connections/', views.GetConnectionsView.as_view(), name='get-connections-system'),

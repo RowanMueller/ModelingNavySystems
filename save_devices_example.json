@@ -1,0 +1,125 @@
+[
+    {
+        "id": "new-2",
+        "position": {
+            "x": 300,
+            "y": 100
+        },
+        "data": {
+            "label": "Device 1 (copy)",
+            "id": 4,
+            "SystemVersion": 1,
+            "AssetId": "77020\";",
+            "Manufacturer": "TECHNICAL MFG CO.\";",
+            "ModelNumber": "77A-440-02\";",
+            "AssetName": "TABLE W/VIBRATION ISOLATION SYSTEM\";",
+            "SerialNumber": "2001238\";",
+            "Comments": "S. RAY TAYLOR\";",
+            "AssetCostAmount": null,
+            "NetBookValueAmount": "0;",
+            "Ownership": "11 UVA Owned\";",
+            "InventoryDate": "#########\";",
+            "DatePlacedInService": "9/24/1997\";",
+            "UsefulLifePeriods": null,
+            "AssetType": "562 Other Lab Equipment\";",
+            "LocationID": "FM_0270_03_362\";",
+            "BuildingNumber": "BL0270\";",
+            "BuildingName": "304 Research Lab\";",
+            "Floor": "03\";",
+            "RoomNumber": "362\";",
+            "Xposition": 0,
+            "Yposition": 0,
+            "System": 13,
+            "oldTagNumber": "77020\";",
+            "assetCostAmount": "5460.37;",
+            "usefulLifePeriods": "120;"
+        },
+        "measured": {
+            "width": 150,
+            "height": 40
+        }
+    },
+    {
+        "id": "new-3",
+        "position": {
+            "x": 471,
+            "y": -108
+        },
+        "data": {
+            "label": "Device 1 (copy)",
+            "id": 4,
+            "SystemVersion": 1,
+            "AssetId": "77020\";",
+            "Manufacturer": "TECHNICAL MFG CO.\";",
+            "ModelNumber": "77A-440-02\";",
+            "AssetName": "TABLE W/VIBRATION ISOLATION SYSTEM\";",
+            "SerialNumber": "2001238\";",
+            "Comments": "S. RAY TAYLOR\";",
+            "AssetCostAmount": null,
+            "NetBookValueAmount": "0;",
+            "Ownership": "11 UVA Owned\";",
+            "InventoryDate": "#########\";",
+            "DatePlacedInService": "9/24/1997\";",
+            "UsefulLifePeriods": null,
+            "AssetType": "562 Other Lab Equipment\";",
+            "LocationID": "FM_0270_03_362\";",
+            "BuildingNumber": "BL0270\";",
+            "BuildingName": "304 Research Lab\";",
+            "Floor": "03\";",
+            "RoomNumber": "362\";",
+            "Xposition": 0,
+            "Yposition": 0,
+            "System": 13,
+            "oldTagNumber": "77020\";",
+            "assetCostAmount": "5460.37;",
+            "usefulLifePeriods": "120;"
+        },
+        "measured": {
+            "width": 150,
+            "height": 40
+        }
+    },
+    {
+        "id": "1",
+        "position": {
+            "x": 191,
+            "y": -134
+        },
+        "data": {
+            "label": "Device 1",
+            "id": 4,
+            "SystemVersion": 1,
+            "AssetId": "77020\";",
+            "Manufacturer": "TECHNICAL MFG CO.\";",
+            "ModelNumber": "77A-440-02\";",
+            "AssetName": "TABLE W/VIBRATION ISOLATION SYSTEM\";",
+            "SerialNumber": "2001238\";",
+            "Comments": "S. RAY TAYLOR\";",
+            "AssetCostAmount": null,
+            "NetBookValueAmount": "0;",
+            "Ownership": "11 UVA Owned\";",
+            "InventoryDate": "#########\";",
+            "DatePlacedInService": "9/24/1997\";",
+            "UsefulLifePeriods": null,
+            "AssetType": "562 Other Lab Equipment\";",
+            "LocationID": "FM_0270_03_362\";",
+            "BuildingNumber": "BL0270\";",
+            "BuildingName": "304 Research Lab\";",
+            "Floor": "03\";",
+            "RoomNumber": "362\";",
+            "Xposition": 0,
+            "Yposition": 0,
+            "System": 13,
+            "oldTagNumber": "77020\";",
+            "assetCostAmount": "5460.37;",
+            "usefulLifePeriods": "120;",
+            "unexpectedProperty": "unexpectedValue_lololol"
+        },
+        "measured": {
+            "width": 150,
+            "height": 40
+        },
+        "selected": true,
+        "dragging": false
+    }
+]

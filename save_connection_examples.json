@@ -1,0 +1,11 @@
+[
+  {
+    "source": "1",
+    "target": "new-2",
+    "type": "custom",
+    "data": {
+      "label": "New Connectio"
+    },
+    "id": "xy-edge__1-new-2"
+  }
+]

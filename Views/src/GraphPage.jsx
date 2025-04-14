@@ -187,7 +187,7 @@ function GraphContent() {
     if (!flowInstance) return;
 
     axios.post(
-      `${import.meta.env.VITE_BASE_URL}/api/v1/${system.id}/save-graph`,
+      `${import.meta.env.VITE_BASE_URL}/api/v1/${system.id}/save-graph/`,
       {
         version: system.Version,
         devices: nodes,
@@ -195,6 +195,7 @@ function GraphContent() {
       },
       {
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("access_token")}`,
         },
       }

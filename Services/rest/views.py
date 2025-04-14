@@ -287,9 +287,9 @@ class UploadNewSystemVersion(APIView):
     
 class SaveSystem(APIView): 
     permission_classes = [IsAuthenticated]
-    def post(self, request, systemID, *args, **kwargs):
+    def post(self, request, systemId, *args, **kwargs):
         user = request.user
-        system_id = systemID + 1 
+        system_id = systemId + 1 
         version = request.data.get('version') + 1
         devices = request.data.get('devices')
         connections = request.data.get('connections')
