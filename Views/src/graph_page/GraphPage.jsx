@@ -62,6 +62,7 @@ function GraphContent() {
   const system = location.state.system;
 
   const popupRef = useRef(null);
+  const updated = useRef(false);
 
   const onConnect = useCallback(
     (params) => {
@@ -100,14 +101,17 @@ function GraphContent() {
         const newNodes = res.data.map((device, i) => {
           const { AdditionalAsJson, Xposition, Yposition, ...deviceData } =
             device;
-          console.log(device);
+
           return {
             id: String(i + 1),
-            position: { x: Xposition, y: Yposition },
+            position: {
+              x: Xposition,
+              y: Yposition,
+            },
             data: {
               label: device.device_name || `Device ${i + 1}`,
-              ...deviceData, // Spread the device data without AdditionalAsJson
-              ...(AdditionalAsJson || {}), // Spread the AdditionalAsJson contents so that we can display it in the node properties as normal
+              ...deviceData,
+              ...(AdditionalAsJson || {}),
             },
           };
         });
@@ -205,6 +209,9 @@ function GraphContent() {
             <ArrowLeft />
             <span className="ml-2">Back</span>
           </button>
+          <span className="text-lg text-black font-bold">
+            {system.Name} (version {version})
+          </span>
           <button
             onClick={() => {
               flowInstance.setCenter(0, 0, {

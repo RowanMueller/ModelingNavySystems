@@ -296,31 +296,9 @@ class SaveSystem(APIView):
             return Response({"error": "system_id and version are required."},
                             status=status.HTTP_400_BAD_REQUEST)
                     # Get the existing system by ID and user
-        try:
-            COLUMN_MAPPING = {
-                "AssetId": "AssetId",
-                "Manufacturer": "Manufacturer",
-                "ModelNumber": "ModelNumber",
-                "SerialNumber": "SerialNumber",
-                "Comments": "Comments",
-                "assetCostAmount": "AssetCostAmount",
-                "NetBookValueAmount": "NetBookValueAmount",
-                "Ownership": "Ownership",
-                "InventoryDate": "InventoryDate",
-                "DatePlacedInService": "DatePlacedInService",
-                "usefulLifePeriods": "UsefulLifePeriods",
-                "AssetType": "AssetType",
-                "AssetName": "AssetName",
-                "LocationID": "LocationID",
-                "BuildingNumber": "BuildingNumber",
-                "BuildingName": "BuildingName",
-                "Floor": "Floor",
-                "RoomNumber": "RoomNumber",
-                "Xposition": "Xposition",
-                "Yposition": "Yposition",
-                "System" : "System",
-                "SystemVersion": "SystemVersion",
-            }
+        try:            
+            NORMAL_FIELDS = ["AssetId", "Manufacturer", "ModelNumber", "SerialNumber", "Comments", "AssetCostAmount", "NetBookValueAmount", "Ownership", "InventoryDate", "DatePlacedInService", "UsefulLifePeriods", "AssetType", "AssetName", "LocationID", "BuildingNumber", "BuildingName", "Floor", "RoomNumber"]
+            EXCLUDED_FIELDS = ["Xposition", "Yposition", "SystemVersion", "System", "id"]
 
             system = System.objects.get(id=systemId, User=user)
 
@@ -338,25 +316,20 @@ class SaveSystem(APIView):
                 for key, value in data.items():
                     if isinstance(value, str):
                         value = value.strip().strip('";')
-                    if key in COLUMN_MAPPING:
-                        mapped_key = COLUMN_MAPPING[key]
-                        cleaned_data[mapped_key] = value
-                    else:
+                    if key in NORMAL_FIELDS:
+                        cleaned_data[key] = value
+                    elif key not in EXCLUDED_FIELDS and value is not None:
                         additional_data[key] = value
 
-                # Add required system and version
                 cleaned_data["System"] = system
                 cleaned_data["SystemVersion"] = version
 
-                # Add position explicitly
-                cleaned_data["Xposition"] = position.get("x")
-                cleaned_data["Yposition"] = position.get("y")
+                cleaned_data["Xposition"] = position.get("x", 0)
+                cleaned_data["Yposition"] = position.get("y", 0)
 
-                # Add additional info if any
                 if additional_data:
                     cleaned_data["AdditionalAsJson"] = additional_data
 
-                # Save the device
                 Device.objects.create(**cleaned_data)
             # Save new connections (increment version, auto-increment id)
             for connection_data in connections:
