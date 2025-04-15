@@ -332,15 +332,14 @@ class SaveSystem(APIView):
                 Device.objects.create(**cleaned_data, System=system)
 
             for connection_data in connections:
-                new_connection_data = connection_data.copy()
-
-                new_connection_data.pop('id', None)
-
-                original_version = connection_data.get('version', 0)
-                new_connection_data['version'] = original_version + 1
+                source = connection_data.get("source")
+                target = connection_data.get("target")
+                data = connection_data.get("data", {}) # id refers to json 
+                connection_type = data['label']
+                print(source, target, data)
 
                 # Create new connection linked to this system
-                Connection.objects.create(System=system, **new_connection_data)
+                #Connection.objects.create(System=system, **new_connection_data)
             return Response({"message": "System saved successfully."},
                             status=status.HTTP_200_OK)
                             
@@ -372,6 +371,8 @@ class SystemDetailView(APIView):
 
         serializer = SystemSerializer(system)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
 
 # 1. Do save graph if I'm given system_id, increment version and system_id, system_version, devices, and connections. treat devices and connections
 # like new version track x and y values. 
