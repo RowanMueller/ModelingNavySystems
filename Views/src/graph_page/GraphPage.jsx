@@ -200,7 +200,11 @@ function GraphContent() {
                   x: 0,
                   y: 0,
                 },
-                data: { label: "New Device", SystemVersion: system.Version },
+                data: {
+                  label: "New Device",
+                  SystemVersion: system.Version,
+                  AssetId: "",
+                },
               },
             ]);
           }}
