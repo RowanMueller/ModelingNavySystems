@@ -60,9 +60,11 @@ class GetConnectionsView(APIView):
         try:
             # Verify the System exists for the given userId
             system = System.objects.get(id=systemId, User_id=user_id)
-            # Fetch all Connections for the System
+            # Fetch all Connections for the 
+            print(systemId, version)
             connections = Connection.objects.filter(System=system, SystemVersion=version)
             serializer = ConnectionSerializer(connections, many=True)
+            print(serializer.data)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except System.DoesNotExist:
             return Response(
@@ -305,6 +307,8 @@ class SaveSystem(APIView):
             # Increment version
             system.Version += 1
             system.save()
+            
+            id_to_device = {}
 
             for device_data in devices:
                 data = device_data.get("data", {})
@@ -328,18 +332,23 @@ class SaveSystem(APIView):
 
                 if additional_data:
                     cleaned_data["AdditionalAsJson"] = additional_data
-
-                Device.objects.create(**cleaned_data, System=system)
+                
+                id_to_device[device_data.get("id")] = Device.objects.create(**cleaned_data, System=system)
 
             for connection_data in connections:
                 source = connection_data.get("source")
                 target = connection_data.get("target")
                 data = connection_data.get("data", {}) # id refers to json 
                 connection_type = data['label']
-                print(source, target, data)
 
-                # Create new connection linked to this system
-                #Connection.objects.create(System=system, **new_connection_data)
+                Connection.objects.create(
+                    System=system, 
+                    Source=id_to_device[source], 
+                    Target=id_to_device[target], 
+                    ConnectionType=connection_type,
+                    SystemVersion=version
+                )
+
             return Response({"message": "System saved successfully."},
                             status=status.HTTP_200_OK)
                             

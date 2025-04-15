@@ -84,44 +84,75 @@ function GraphContent() {
   );
 
   useEffect(() => {
-    axios
-      .get(
-        `${import.meta.env.VITE_BASE_URL}/api/v1/${
-          system.id
-        }/${version}/get-devices`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-          },
-        }
-      )
-      .then((res) => {
-        console.log(res.data);
-        const newNodes = res.data.map((device, i) => {
-          const {
-            AdditionalAsJson,
-            Xposition,
-            Yposition,
-            System,
-            ...deviceData
-          } = device;
+    const fetchData = async () => {
+      let newNodes = [];
 
-          return {
-            id: String(i + 1),
-            position: {
-              x: Xposition,
-              y: Yposition,
+      await axios
+        .get(
+          `${import.meta.env.VITE_BASE_URL}/api/v1/${
+            system.id
+          }/${version}/get-devices`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("access_token")}`,
             },
-            data: {
-              label: device.device_name || `Device ${i + 1}`,
-              ...deviceData,
-              ...(AdditionalAsJson || {}),
-            },
-          };
+          }
+        )
+        .then((res) => {
+          newNodes = res.data.map((device, i) => {
+            const {
+              AdditionalAsJson,
+              Xposition,
+              Yposition,
+              System,
+              ...deviceData
+            } = device;
+
+            return {
+              id: String(i + 1),
+              position: {
+                x: Xposition,
+                y: Yposition,
+              },
+              data: {
+                label: device.device_name || `Device ${i + 1}`,
+                ...deviceData,
+                ...(AdditionalAsJson || {}),
+              },
+            };
+          });
+          setNodes(newNodes);
         });
-        setNodes(newNodes);
-      });
+
+      await axios
+        .get(
+          `${import.meta.env.VITE_BASE_URL}/api/v1/${
+            system.id
+          }/${version}/get-connections`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+            },
+          }
+        )
+        .then((res) => {
+          const newEdges = res.data.map((connection, i) => {
+            return {
+              id: String(i + 1),
+              source: newNodes.find((node) => node.data.id === connection.Source).id,
+              target: newNodes.find((node) => node.data.id === connection.Target).id,
+              data: { label: connection.ConnectionType },
+              type: "custom",
+            };
+          });
+          setEdges(newEdges);
+        });
+      setNodes(newNodes);
+    };
+
+    fetchData();
 
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {

@@ -22,6 +22,8 @@ export default function CustomEdge({
     targetPosition,
   });
 
+  console.log(edges);
+
   return (
     <>
       <BaseEdge id={id} path={edgePath} />

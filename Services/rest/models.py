@@ -40,10 +40,10 @@ class Connection(models.Model):
     System = models.ForeignKey(
         System, on_delete=models.CASCADE, related_name="connections"
     )
-    Device1 = models.ForeignKey(
+    Source = models.ForeignKey(
         "Device", on_delete=models.CASCADE, related_name="connections1"
     )
-    Device2 = models.ForeignKey(
+    Target = models.ForeignKey(
         "Device", on_delete=models.CASCADE, related_name="connections2"
     )
     ConnectionType = models.CharField(max_length=100)
