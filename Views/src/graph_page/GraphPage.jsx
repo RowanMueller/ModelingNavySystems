@@ -147,20 +147,36 @@ function GraphContent() {
   const handleSave = async () => {
     if (!flowInstance) return;
 
-    axios.post(
-      `${import.meta.env.VITE_BASE_URL}/api/v1/${system.id}/save-graph/`,
-      {
-        version: system.Version,
-        devices: nodes,
-        connections: edges,
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+    axios
+      .post(
+        `${import.meta.env.VITE_BASE_URL}/api/v1/${system.id}/save-graph/`,
+        {
+          version: system.Version,
+          devices: nodes,
+          connections: edges,
         },
-      }
-    );
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          },
+        }
+      )
+      .then((res) => {
+        toast.success("Graph saved successfully");
+        navigate(`/system/${system.id}/${system.Version + 1}`, {
+          state: {
+            system: {
+              ...system,
+              Version: system.Version + 1,
+            },
+          },
+        });
+      })
+      .catch((err) => {
+        toast.error("Error saving graph");
+        console.log(err);
+      });
   };
 
   const onNodeClick = useCallback((event, node) => {
