@@ -93,7 +93,7 @@ export default function Dashboard() {
     <div
       className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
       onClick={() => {
-        navigate(`/system/${system.id}`, {
+        navigate(`/system/${system.id}/${system.Version}`, {
           state: { system: system},
         });
       }}

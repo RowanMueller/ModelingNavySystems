@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "./authContext";
 import axios from "axios";
 
@@ -8,7 +8,6 @@ export default function SignIn() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const location = useLocation();
   const { login } = useAuth();
 
   const handleSubmit = async (e) => {
@@ -40,8 +39,7 @@ export default function SignIn() {
 
       login(data);
       // Navigate to the attempted page or default to /upload
-      const from = location.state?.from?.pathname || "/dashboard";
-      navigate(from, { replace: true });
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       console.error("Login error:", err);
       setError(

@@ -27,7 +27,7 @@ function App() {
               }
             />
             <Route
-              path="/system/:id"
+              path="/system/:id/:version"
               element={
                 <ProtectedRoute>
                   <GraphPage />

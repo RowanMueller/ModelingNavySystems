@@ -8,8 +8,8 @@ import {
   addEdge,
   ReactFlowProvider,
 } from "@xyflow/react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { Plus, Save, Download, X, Trash } from "lucide-react";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
+import { Plus, Save, Download, X, Trash, ArrowLeft } from "lucide-react";
 import "@xyflow/react/dist/style.css";
 import axios from "axios";
 import { toast } from "react-hot-toast";
@@ -57,6 +57,7 @@ function GraphContent() {
   const focusedNodeRef = useRef(null);
   const [newProperty, setNewProperty] = useState("");
   const location = useLocation();
+  const { version } = useParams();
 
   const system = location.state.system;
 
@@ -84,9 +85,9 @@ function GraphContent() {
   useEffect(() => {
     axios
       .get(
-        `${import.meta.env.VITE_BASE_URL}/api/v1/${system.id}/${
-          system.Version
-        }/get-devices`,
+        `${import.meta.env.VITE_BASE_URL}/api/v1/${
+          system.id
+        }/${version}/get-devices`,
         {
           headers: {
             "Content-Type": "application/json",
@@ -181,20 +182,8 @@ function GraphContent() {
           onClick={() => navigate("/dashboard")}
           className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
-          <svg
-            className="w-5 h-5 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M10 19l-7-7m0 0l7-7m-7 7h18"
-            />
-          </svg>
-          Back
+          <ArrowLeft />
+          <span className="ml-2">Back</span>
         </button>
         <button
           onClick={() => {
@@ -254,6 +243,33 @@ function GraphContent() {
         >
           <span className="ml-2">Debug print</span>
         </button> */}
+        <hr className="my-4" />
+        <div className="flex flex-col gap-2">
+          <h2 className="text-lg font-medium">System Versions</h2>
+          <div className="flex flex-col gap-2">
+            {(() => {
+              const items = [];
+              for (let i = 0; i < system.Version; i++) {
+                items.push(
+                  <button
+                    key={i}
+                    onClick={() => {
+                      if (i + 1 != version) {
+                        navigate(`/system/${system.id}/${i + 1}`, {
+                          state: { system: system },
+                        });
+                      }
+                    }}
+                    className="inline-flex w-full items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <span className="ml-2 w-full">{`Version ${i + 1}`}</span>
+                  </button>
+                );
+              }
+              return items;
+            })()}
+          </div>
+        </div>
       </div>
       <div className="w-full h-full">
         <ReactFlow
