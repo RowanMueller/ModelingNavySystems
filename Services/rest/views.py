@@ -316,6 +316,10 @@ class SaveSystem(APIView):
                 "BuildingName": "BuildingName",
                 "Floor": "Floor",
                 "RoomNumber": "RoomNumber",
+                "Xposition": "Xposition",
+                "Yposition": "Yposition",
+                "System" : "System",
+                "SystemVersion": "SystemVersion",
             }
 
             system = System.objects.get(id=systemId, User=user)
@@ -338,15 +342,15 @@ class SaveSystem(APIView):
                         mapped_key = COLUMN_MAPPING[key]
                         cleaned_data[mapped_key] = value
                     else:
-                        additional_data[key] = value  # unknown fields go here
+                        additional_data[key] = value
 
                 # Add required system and version
                 cleaned_data["System"] = system
                 cleaned_data["SystemVersion"] = version
 
                 # Add position explicitly
-                cleaned_data["Xposition"] = position.get("x", 0)
-                cleaned_data["Yposition"] = position.get("y", 0)
+                cleaned_data["Xposition"] = position.get("x")
+                cleaned_data["Yposition"] = position.get("y")
 
                 # Add additional info if any
                 if additional_data:
@@ -354,21 +358,16 @@ class SaveSystem(APIView):
 
                 # Save the device
                 Device.objects.create(**cleaned_data)
-                
             # Save new connections (increment version, auto-increment id)
             for connection_data in connections:
-                # Copy connection data so we don't modify the original request
-                new_connection_data = connection_data.copy()
-
-                # Remove 'id' if it's included in the incoming data
-                new_connection_data.pop('id', None)
-
-                # Increment version by 1 (default to 0 if not provided)
-                original_version = connection_data.get('version', 0)
-                new_connection_data['version'] = original_version + 1
+                source = connection_data.get("source")
+                target = connection_data.get("target")
+                data = connection_data.get("data", {}) # id refers to json 
+                connection_type = data['label']
+                print(source, target, data)
 
                 # Create new connection linked to this system
-                Connection.objects.create(System=system, **new_connection_data)
+                #Connection.objects.create(System=system, **new_connection_data)
             return Response({"message": "System saved successfully."},
                             status=status.HTTP_200_OK)
                             
@@ -400,6 +399,8 @@ class SystemDetailView(APIView):
 
         serializer = SystemSerializer(system)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
 
 # 1. Do save graph if I'm given system_id, increment version and system_id, system_version, devices, and connections. treat devices and connections
 # like new version track x and y values. 
