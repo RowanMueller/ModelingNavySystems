@@ -96,6 +96,7 @@ function GraphContent() {
         }
       )
       .then((res) => {
+        console.log(res.data);
         const newNodes = res.data.map((device, i) => {
           const { AdditionalAsJson, ...deviceData } = device;
           return {
@@ -142,7 +143,7 @@ function GraphContent() {
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
+  }, [version]);
 
   const handleSave = async () => {
     if (!flowInstance) return;
@@ -193,79 +194,74 @@ function GraphContent() {
 
   return (
     <div className="relative w-screen h-screen">
-      <div className="absolute top-0 left-0 z-10 w-[300px] h-full bg-white border-r border-gray-200 p-4 flex flex-col gap-4 shadow-lg">
-        <button
-          onClick={() => navigate("/dashboard")}
-          className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          <ArrowLeft />
-          <span className="ml-2">Back</span>
-        </button>
-        <button
-          onClick={() => {
-            flowInstance.setCenter(0, 0, {
-              zoom: 1,
-              duration: 1000,
-            });
+      <div className="absolute top-0 left-0 z-10 w-[350px] h-full bg-white border-r border-gray-200 p-4 flex flex-col shadow-lg">
+        <div className="flex flex-col gap-4">
+          <button
+            onClick={() => navigate("/dashboard")}
+            className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <ArrowLeft />
+            <span className="ml-2">Back</span>
+          </button>
+          <button
+            onClick={() => {
+              flowInstance.setCenter(0, 0, {
+                zoom: 1,
+                duration: 1000,
+              });
 
-            setNodes((nds) => [
-              ...nds,
-              {
-                id: `new-${String(nds.length + 1)}`,
-                position: {
-                  x: 0,
-                  y: 0,
+              setNodes((nds) => [
+                ...nds,
+                {
+                  id: `new-${String(nds.length + 1)}`,
+                  position: {
+                    x: 0,
+                    y: 0,
+                  },
+                  data: {
+                    label: "New Device",
+                    SystemVersion: system.Version,
+                    AssetId: "",
+                  },
                 },
-                data: {
-                  label: "New Device",
-                  SystemVersion: system.Version,
-                  AssetId: "",
-                },
-              },
-            ]);
-          }}
-          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-        >
-          <Plus />
-          <span className="ml-2">Add New Device</span>
-        </button>
-        <button
-          onClick={handleSave}
-          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          <Save />
-          <span className="ml-2">Save Graph</span>
-        </button>
-        <button
-          onClick={() => {
-            //TODO -> Download SysML file
-          }}
-          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          <Download />
-          <span className="ml-2">Download SysML file</span>
-        </button>
-        <button
-          onClick={() => {
-            setOnDelete(true);
-          }}
-          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-500 border border-transparent rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          <Trash />
-          <span className="ml-2">Delete System</span>
-        </button>
-        {/* <button
-          onClick={() => {
-            console.log(nodes);
-            console.log(edges);
-          }}
-          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          <span className="ml-2">Debug print</span>
-        </button> */}
+              ]);
+            }}
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+          >
+            <Plus />
+            <span className="ml-2">Add New Device</span>
+          </button>
+          <button
+            onClick={handleSave}
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <Save />
+            <span className="ml-2">Save Graph</span>
+          </button>
+          <button
+            onClick={() => {
+              //TODO -> Download SysML file
+            }}
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <Download />
+            <span className="ml-2">
+              Download SysML file (version {version})
+            </span>
+          </button>
+          <button
+            onClick={() => {
+              setOnDelete(true);
+            }}
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-500 border border-transparent rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <Trash />
+            <span className="ml-2">Delete System</span>
+          </button>
+        </div>
         <hr className="my-4" />
-        <div className="flex flex-col gap-2">
-          <h2 className="text-lg font-medium">System Versions</h2>
+        <div className="flex flex-col gap-2 overflow-y-auto flex-grow">
+          <h2 className="text-lg font-medium sticky top-0 bg-white py-2">System Versions</h2>
           <div className="flex flex-col gap-2">
             {(() => {
               const items = [];

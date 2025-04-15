@@ -121,7 +121,7 @@ export default function UploadPage() {
                     }
                   )
                   .then((response) => {
-                    navigate(`/system/${response.data.id}`, {
+                    navigate(`/system/${response.data.id}/1`, {
                       state: {
                         system: response.data,
                       },
