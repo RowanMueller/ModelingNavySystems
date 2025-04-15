@@ -287,7 +287,7 @@ class SaveSystem(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request, systemId, *args, **kwargs):
         user = request.user
-        system_id = systemId + 1 
+        system_id = systemId
         version = request.data.get('version') + 1
         devices = request.data.get('devices')
         connections = request.data.get('connections')
@@ -295,28 +295,65 @@ class SaveSystem(APIView):
         if not system_id or not version:
             return Response({"error": "system_id and version are required."},
                             status=status.HTTP_400_BAD_REQUEST)
-        
+                    # Get the existing system by ID and user
         try:
-            system = System.objects.get(id=system_id, User=user)
-            system.Version = version
-            system.NodeCount = len(devices)
-            system.EdgeCount = len(connections)
+            COLUMN_MAPPING = {
+                "AssetId": "AssetId",
+                "Manufacturer": "Manufacturer",
+                "ModelNumber": "ModelNumber",
+                "SerialNumber": "SerialNumber",
+                "Comments": "Comments",
+                "assetCostAmount": "AssetCostAmount",
+                "NetBookValueAmount": "NetBookValueAmount",
+                "Ownership": "Ownership",
+                "InventoryDate": "InventoryDate",
+                "DatePlacedInService": "DatePlacedInService",
+                "usefulLifePeriods": "UsefulLifePeriods",
+                "AssetType": "AssetType",
+                "AssetName": "AssetName",
+                "LocationID": "LocationID",
+                "BuildingNumber": "BuildingNumber",
+                "BuildingName": "BuildingName",
+                "Floor": "Floor",
+                "RoomNumber": "RoomNumber",
+            }
+
+            system = System.objects.get(id=systemId, User=user)
+
+            # Increment version
+            system.Version += 1
             system.save()
 
-            # Save new devices (increment version, auto-increment id)
             for device_data in devices:
-                # Copy device data so we don't modify the original request
-                new_device_data = device_data.copy()
+                data = device_data.get("data", {})
+                position = device_data.get("position", {})
 
-                # Remove 'id' if it's included in the incoming data
-                new_device_data.pop('id', None)
+                cleaned_data = {}
+                additional_data = {}
 
-                # Increment version by 1 (default to 0 if not provided)
-                original_version = device_data.get('version', 0)
-                new_device_data['version'] = original_version + 1
+                for key, value in data.items():
+                    if isinstance(value, str):
+                        value = value.strip().strip('";')
+                    if key in COLUMN_MAPPING:
+                        mapped_key = COLUMN_MAPPING[key]
+                        cleaned_data[mapped_key] = value
+                    else:
+                        additional_data[key] = value  # unknown fields go here
 
-                # Create new device linked to this system
-                Device.objects.create(System=system, **new_device_data)
+                # Add required system and version
+                cleaned_data["System"] = system
+                cleaned_data["SystemVersion"] = version
+
+                # Add position explicitly
+                cleaned_data["Xposition"] = position.get("x", 0)
+                cleaned_data["Yposition"] = position.get("y", 0)
+
+                # Add additional info if any
+                if additional_data:
+                    cleaned_data["AdditionalAsJson"] = additional_data
+
+                # Save the device
+                Device.objects.create(**cleaned_data)
                 
             # Save new connections (increment version, auto-increment id)
             for connection_data in connections:
@@ -332,10 +369,9 @@ class SaveSystem(APIView):
 
                 # Create new connection linked to this system
                 Connection.objects.create(System=system, **new_connection_data)
-
-            
             return Response({"message": "System saved successfully."},
                             status=status.HTTP_200_OK)
+                            
         except System.DoesNotExist:
             return Response({"error": "System not found."}, status=status.HTTP_404_NOT_FOUND)
 
