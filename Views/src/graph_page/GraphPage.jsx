@@ -98,10 +98,12 @@ function GraphContent() {
       .then((res) => {
         console.log(res.data);
         const newNodes = res.data.map((device, i) => {
-          const { AdditionalAsJson, ...deviceData } = device;
+          const { AdditionalAsJson, Xposition, Yposition, ...deviceData } =
+            device;
+          console.log(device);
           return {
             id: String(i + 1),
-            position: { x: 0, y: 100 * (i + 1) },
+            position: { x: Xposition, y: Yposition },
             data: {
               label: device.device_name || `Device ${i + 1}`,
               ...deviceData, // Spread the device data without AdditionalAsJson
@@ -261,7 +263,9 @@ function GraphContent() {
         </div>
         <hr className="my-4" />
         <div className="flex flex-col gap-2 overflow-y-auto flex-grow">
-          <h2 className="text-lg font-medium sticky top-0 bg-white py-2">System Versions</h2>
+          <h2 className="text-lg font-medium sticky top-0 bg-white py-2">
+            System Versions
+          </h2>
           <div className="flex flex-col gap-2">
             {(() => {
               const items = [];
