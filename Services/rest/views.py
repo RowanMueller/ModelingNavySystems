@@ -321,7 +321,6 @@ class SaveSystem(APIView):
                     elif key not in EXCLUDED_FIELDS and value is not None:
                         additional_data[key] = value
 
-                cleaned_data["System"] = system
                 cleaned_data["SystemVersion"] = version
 
                 cleaned_data["Xposition"] = position.get("x", 0)
@@ -330,7 +329,7 @@ class SaveSystem(APIView):
                 if additional_data:
                     cleaned_data["AdditionalAsJson"] = additional_data
 
-                Device.objects.create(**cleaned_data)
+                Device.objects.create(**cleaned_data, System=system)
 
             for connection_data in connections:
                 new_connection_data = connection_data.copy()

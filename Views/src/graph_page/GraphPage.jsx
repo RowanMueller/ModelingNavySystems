@@ -99,8 +99,13 @@ function GraphContent() {
       .then((res) => {
         console.log(res.data);
         const newNodes = res.data.map((device, i) => {
-          const { AdditionalAsJson, Xposition, Yposition, ...deviceData } =
-            device;
+          const {
+            AdditionalAsJson,
+            Xposition,
+            Yposition,
+            System,
+            ...deviceData
+          } = device;
 
           return {
             id: String(i + 1),
