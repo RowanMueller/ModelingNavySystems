@@ -141,8 +141,12 @@ function GraphContent() {
           const newEdges = res.data.map((connection, i) => {
             return {
               id: String(i + 1),
-              source: newNodes.find((node) => node.data.id === connection.Source).id,
-              target: newNodes.find((node) => node.data.id === connection.Target).id,
+              source: newNodes.find(
+                (node) => node.data.id === connection.Source
+              ).id,
+              target: newNodes.find(
+                (node) => node.data.id === connection.Target
+              ).id,
               data: { label: connection.ConnectionType },
               type: "custom",
             };
@@ -285,7 +289,43 @@ function GraphContent() {
           </button>
           <button
             onClick={() => {
-              //TODO -> Download SysML file
+              axios
+                .get(
+                  `${import.meta.env.VITE_BASE_URL}/api/v1/${
+                    system.id
+                  }/${version}/download-sysml`,
+                  {
+                    headers: {
+                      Authorization: `Bearer ${localStorage.getItem(
+                        "access_token"
+                      )}`,
+                    },
+                    responseType: "blob", // Ensure binary data is handled correctly
+                  }
+                )
+                .then((res) => {
+                  const blob = new Blob([res.data], {
+                    type: res.headers["content-type"],
+                  });
+
+                  // Extract filename from headers if available
+                  let filename = "downloadedFile";
+                  const contentDisposition = res.headers["content-disposition"];
+                  if (contentDisposition) {
+                    const match =
+                      contentDisposition.match(/filename="?([^"]+)"?/);
+                    if (match) filename = match[1];
+                  }
+
+                  const url = window.URL.createObjectURL(blob);
+                  const link = document.createElement("a");
+                  link.href = url;
+                  link.setAttribute("download", filename);
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  window.URL.revokeObjectURL(url);
+                });
             }}
             className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >

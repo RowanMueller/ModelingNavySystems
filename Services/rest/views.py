@@ -102,6 +102,14 @@ class DeleteSystemView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+class RenameSystemView(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request, systemId, *args, **kwargs):
+        user = request.user
+        system = System.objects.get(id=systemId, User=user)
+        system.Name = request.data.get('name')
+        system.save()
+        return Response(status=status.HTTP_200_OK)
 
 # Fetches devices and converts to JSON
 class GetAllDevices(APIView):
