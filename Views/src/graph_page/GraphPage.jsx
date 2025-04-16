@@ -239,142 +239,159 @@ function GraphContent() {
   }, []);
 
   return (
-    <div className="relative w-screen h-screen">
-      <div className="absolute top-0 left-0 z-10 w-[350px] h-full bg-white border-r border-gray-200 p-4 flex flex-col shadow-lg">
-        <div className="flex flex-col gap-4">
-          <button
-            onClick={() => navigate("/dashboard")}
-            className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <ArrowLeft />
-            <span className="ml-2">Back</span>
-          </button>
-          <span className="text-lg text-black font-bold">
-            {system.Name} (version {version})
-          </span>
-          <button
-            onClick={() => {
-              flowInstance.setCenter(0, 0, {
-                zoom: 1,
-                duration: 1000,
-              });
+    <div className="h-screen overflow-hidden">
+      {/* Sidebar */}
+      <div className="fixed top-0 left-0 z-10 w-[350px] h-full bg-gradient-to-br from-blue-400/20 via-indigo-500/20 to-cyan-500/20 animate-gradient bg-[length:400%_400%] bg-white/80 backdrop-blur-md border-r border-white/20 p-6 flex flex-col shadow-xl">
+        <div className="flex flex-col h-full">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="text-gray-700 hover:bg-white/10 p-2 rounded-lg transition-all duration-200 flex items-center"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span className="ml-2">Back</span>
+            </button>
+          </div>
+          <h2 className="text-lg font-semibold text-gray-900 mt-6">System:</h2>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {system.Name}
+            <div className="inline-flex items-center ml-2">
+              <select
+                value={version}
+                onChange={(e) => {
+                  const newVersion = e.target.value;
+                  if (newVersion !== version) {
+                    navigate(`/system/${system.id}/${newVersion}`, {
+                      state: { system: system },
+                    });
+                  }
+                }}
+                className="ml-2 text-sm bg-white/50 border border-gray-200 text-gray-700 rounded-lg px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 cursor-pointer hover:bg-white/70"
+              >
+                {Array.from({ length: system.Version }, (_, i) => (
+                  <option key={i + 1} value={i + 1}>
+                    version-{i + 1}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </h1>
 
-              setNodes((nds) => [
-                ...nds,
-                {
-                  id: `new-${String(nds.length + 1)}`,
-                  position: {
-                    x: 0,
-                    y: 0,
-                  },
-                  data: {
-                    label: "New Device",
-                    SystemVersion: system.Version,
-                    AssetId: "",
-                  },
-                },
-              ]);
-            }}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-          >
-            <Plus />
-            <span className="ml-2">Add New Device</span>
-          </button>
-          <button
-            onClick={handleSave}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <Save />
-            <span className="ml-2">Save Graph</span>
-          </button>
-          <button
-            onClick={() => {
-              axios
-                .get(
-                  `${import.meta.env.VITE_BASE_URL}/api/v1/${
-                    system.id
-                  }/${version}/download-sysml`,
+          <div className="flex flex-col space-y-3 mt-6">
+            <button
+              onClick={() => {
+                flowInstance.setCenter(0, 0, { zoom: 1, duration: 1000 });
+                setNodes((nds) => [
+                  ...nds,
                   {
-                    headers: {
-                      Authorization: `Bearer ${localStorage.getItem(
-                        "access_token"
-                      )}`,
+                    id: `new-${String(nds.length + 1)}`,
+                    position: { x: 0, y: 0 },
+                    data: {
+                      label: "New Device",
+                      SystemVersion: system.Version,
+                      AssetId: "",
                     },
-                    responseType: "blob", // Ensure binary data is handled correctly
-                  }
-                )
-                .then((res) => {
-                  const blob = new Blob([res.data], {
-                    type: res.headers["content-type"],
+                  },
+                ]);
+              }}
+              className="px-4 py-3 bg-green-500/90 backdrop-blur-md text-white rounded-lg hover:bg-green-600/90 transition-all duration-300 flex items-center justify-center border border-green-400/20 shadow-lg"
+            >
+              <Plus className="w-5 h-5" />
+              <span className="ml-2">Add New Device</span>
+            </button>
+
+            <button
+              onClick={handleSave}
+              className="px-4 py-3 bg-blue-500/90 backdrop-blur-md text-white rounded-lg hover:bg-blue-600/90 transition-all duration-300 flex items-center justify-center border border-blue-400/20 shadow-lg"
+            >
+              <Save className="w-5 h-5" />
+              <span className="ml-2">Save Graph</span>
+            </button>
+
+            <button
+              onClick={() => {
+                axios
+                  .get(
+                    `${import.meta.env.VITE_BASE_URL}/api/v1/${
+                      system.id
+                    }/${version}/download-sysml`,
+                    {
+                      headers: {
+                        Authorization: `Bearer ${localStorage.getItem(
+                          "access_token"
+                        )}`,
+                      },
+                      responseType: "blob",
+                    }
+                  )
+                  .then((res) => {
+                    const blob = new Blob([res.data], {
+                      type: res.headers["content-type"],
+                    });
+                    let filename = "downloadedFile";
+                    const contentDisposition =
+                      res.headers["content-disposition"];
+                    if (contentDisposition) {
+                      const match =
+                        contentDisposition.match(/filename="?([^"]+)"?/);
+                      if (match) filename = match[1];
+                    }
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.setAttribute("download", filename);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
                   });
+              }}
+              className="px-4 py-3 bg-blue-500/90 backdrop-blur-md text-white rounded-lg hover:bg-blue-600/90 transition-all duration-300 flex items-center justify-center border border-blue-400/20 shadow-lg"
+            >
+              <Download className="w-5 h-5" />
+              <span className="ml-2">Download SysML</span>
+            </button>
 
-                  // Extract filename from headers if available
-                  let filename = "downloadedFile";
-                  const contentDisposition = res.headers["content-disposition"];
-                  if (contentDisposition) {
-                    const match =
-                      contentDisposition.match(/filename="?([^"]+)"?/);
-                    if (match) filename = match[1];
-                  }
+            <button
+              onClick={() => setOnDelete(true)}
+              className="px-4 py-3 bg-red-500/80 backdrop-blur-md text-white rounded-lg hover:bg-red-600/80 transition-all duration-300 flex items-center justify-center border border-red-400/20 shadow-lg"
+            >
+              <Trash className="w-5 h-5" />
+              <span className="ml-2">Delete System</span>
+            </button>
+          </div>
 
-                  const url = window.URL.createObjectURL(blob);
-                  const link = document.createElement("a");
-                  link.href = url;
-                  link.setAttribute("download", filename);
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                  window.URL.revokeObjectURL(url);
-                });
-            }}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <Download />
-            <span className="ml-2">
-              Download SysML file (version {version})
-            </span>
-          </button>
-          <button
-            onClick={() => {
-              setOnDelete(true);
-            }}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-500 border border-transparent rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <Trash />
-            <span className="ml-2">Delete System</span>
-          </button>
-        </div>
-        <hr className="my-4" />
-        <div className="flex flex-col gap-2 overflow-y-auto flex-grow">
-          <h2 className="text-lg font-medium sticky top-0 bg-white py-2">
-            System Versions
-          </h2>
-          <div className="flex flex-col gap-2">
-            {(() => {
-              const items = [];
-              for (let i = 0; i < system.Version; i++) {
-                items.push(
-                  <button
-                    key={i}
-                    onClick={() => {
-                      if (i + 1 != version) {
-                        navigate(`/system/${system.id}/${i + 1}`, {
-                          state: { system: system },
-                        });
-                      }
-                    }}
-                    className="inline-flex w-full items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    <span className="ml-2 w-full">{`Version ${i + 1}`}</span>
-                  </button>
-                );
-              }
-              return items;
-            })()}
+          <div className="border-t border-gray-200/50 mt-6 flex-1 overflow-hidden flex flex-col">
+            <h2 className="text-lg font-semibold text-gray-900 my-4">
+              System Versions
+            </h2>
+            <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+              {Array.from({ length: system.Version }, (_, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    if (i + 1 !== version) {
+                      navigate(`/system/${system.id}/${i + 1}`, {
+                        state: { system: system },
+                      });
+                    }
+                  }}
+                  className={`w-full px-4 py-3 rounded-lg transition-all duration-200 flex items-center ${
+                    i + 1 === parseInt(version)
+                      ? "bg-blue-500/90 text-white"
+                      : "bg-white/50 hover:bg-white/70 text-gray-700"
+                  }`}
+                >
+                  Version {i + 1}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
-      <div className="w-full h-full">
+
+      {/* Main Content */}
+      <div className="ml-[350px] h-screen">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -387,31 +404,32 @@ function GraphContent() {
           onNodeMouseEnter={onNodeMouseEnter}
           onNodeMouseLeave={onNodeMouseLeave}
           className="w-full h-full"
-          defaultViewport={{ x: 350, y: 350, zoom: 1 }}
+          defaultViewport={{ x: 0, y: 0, zoom: 1 }}
           edgeTypes={edgeTypes}
         >
-          <Controls />
-          <MiniMap />
-          <Background variant="dots" gap={12} size={1} />
+          <Controls className="bg-white/80 backdrop-blur-md border border-white/20 shadow-lg" />
+          <MiniMap className="bg-white/80 backdrop-blur-md border border-white/20 shadow-lg" />
+          <Background variant="dots" gap={12} size={1} className="bg-white/5" />
         </ReactFlow>
       </div>
 
+      {/* Delete Confirmation Modal */}
       {onDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
-          <div className="bg-white rounded-lg p-6 w-96 relative">
-            <h2 className="text-xl font-bold mb-4">Delete System</h2>
-            <p className="mb-4">Are you sure you want to delete this system?</p>
-            <div className="flex gap-4 items-center justify-between">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-xl p-6 max-w-md w-full space-y-6 transform transition-all duration-300">
+            <h2 className="text-2xl font-bold text-gray-900">Delete System</h2>
+            <p className="text-gray-600">
+              Are you sure you want to delete this system? This action cannot be
+              undone.
+            </p>
+            <div className="flex space-x-4">
               <button
-                onClick={() => {
-                  setOnDelete(false);
-                }}
-                className="bg-blue-500 text-white px-4 py-2 rounded-md w-full"
+                onClick={() => setOnDelete(false)}
+                className="flex-1 px-4 py-3 bg-gray-500/80 backdrop-blur-md text-white rounded-lg hover:bg-gray-600/80 transition-all duration-300 border border-gray-400/20 shadow-lg"
               >
                 Cancel
               </button>
               <button
-                className="bg-red-500 text-white px-4 py-2 rounded-md w-full"
                 onClick={() => {
                   axios
                     .delete(
@@ -435,6 +453,7 @@ function GraphContent() {
                       console.log(err);
                     });
                 }}
+                className="flex-1 px-4 py-3 bg-red-500/80 backdrop-blur-md text-white rounded-lg hover:bg-red-600/80 transition-all duration-300 border border-red-400/20 shadow-lg"
               >
                 Delete
               </button>
@@ -445,28 +464,32 @@ function GraphContent() {
 
       {/* Device Properties Modal */}
       {selectedNode && (
-        <div
-          ref={popupRef}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10"
-        >
-          <div className="bg-white rounded-lg p-6 w-96 relative">
-            <button
-              onClick={() => setSelectedNode(null)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-            >
-              <X size={20} />
-            </button>
-            <h2 className="text-xl font-bold mb-4">Device Properties</h2>
-            <div className="space-y-4 max-h-[500px] overflow-y-auto">
-              {Object.keys(selectedNode.data).map((key) => {
-                return (
-                  <div key={key}>
-                    <div className="flex items-center justify-between">
-                      <label className="block text-sm font-medium text-gray-700">
-                        {key}
-                      </label>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div
+            ref={popupRef}
+            className="bg-white/80 backdrop-blur-md rounded-2xl shadow-xl p-6 max-w-md w-full space-y-6 transform transition-all duration-300"
+          >
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Device Properties
+              </h2>
+              <button
+                onClick={() => setSelectedNode(null)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+              {Object.entries(selectedNode.data).map(([key, value]) => (
+                <div key={key} className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-gray-700">
+                      {key}
+                    </label>
+                    {key !== "id" && key !== "SystemVersion" && (
                       <button
-                        className="text-gray-500 hover:text-gray-700"
                         onClick={() => {
                           const newData = { ...selectedNode.data };
                           delete newData[key];
@@ -475,37 +498,36 @@ function GraphContent() {
                             data: newData,
                           }));
                         }}
+                        className="p-1 hover:bg-red-100 rounded-full text-red-500 hover:text-red-600 transition-colors duration-200"
                       >
-                        <X size={20} />
+                        <X className="w-4 h-4" />
                       </button>
-                    </div>
-                    <input
-                      className="w-full border border-gray-300 rounded-md p-2"
-                      type="text"
-                      disabled={key === "id" || key === "SystemVersion"}
-                      value={selectedNode.data[key] || ""}
-                      onChange={(e) => {
-                        setSelectedNode((nds) => ({
-                          ...nds,
-                          data: { ...nds.data, [key]: e.target.value },
-                        }));
-                      }}
-                    />
-                    {/* {typeof selectedNode.data[key] === 'object'
-                      ? JSON.stringify(selectedNode.data[key])
-                      : String(selectedNode.data[key])}
-                    </p> */}
+                    )}
                   </div>
-                );
-              })}
+                  <input
+                    type="text"
+                    value={value || ""}
+                    disabled={key === "id" || key === "SystemVersion"}
+                    onChange={(e) => {
+                      setSelectedNode((nds) => ({
+                        ...nds,
+                        data: { ...nds.data, [key]: e.target.value },
+                      }));
+                    }}
+                    className="w-full px-3 py-2 bg-white/50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  />
+                </div>
+              ))}
             </div>
-            <div className="flex gap-2">
+
+            <div className="flex space-x-2">
               <input
                 type="text"
-                placeholder="Property name"
-                className="w-full border border-gray-300 rounded-md px-2 mt-4"
+                placeholder="New property name"
+                value={newProperty}
                 onChange={(e) => setNewProperty(e.target.value)}
-              ></input>
+                className="flex-1 px-3 py-2 bg-white/50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              />
               <button
                 onClick={() => {
                   if (Object.keys(selectedNode.data).includes(newProperty)) {
@@ -520,67 +542,74 @@ function GraphContent() {
                     ...nds,
                     data: { ...nds.data, [newProperty]: "" },
                   }));
+                  setNewProperty("");
                 }}
-                className="w-full bg-blue-500 text-white p-2 rounded-md mt-4"
+                className="px-4 py-2 bg-blue-500/90 text-white rounded-lg hover:bg-blue-600/90 transition-all duration-200"
               >
                 Add
               </button>
             </div>
 
-            <button
-              onClick={() => {
-                setNodes((nds) =>
-                  nds
-                    .filter((node) => node.id !== selectedNode.id)
-                    .concat(selectedNode)
-                );
-                setSelectedNode(null);
-              }}
-              className="w-full bg-blue-500 text-white p-2 rounded-md mt-4"
-            >
-              Save
-            </button>
+            <div className="flex flex-col space-y-3 pt-4 border-t border-gray-200/50">
+              <button
+                onClick={() => {
+                  setNodes((nds) =>
+                    nds
+                      .filter((node) => node.id !== selectedNode.id)
+                      .concat(selectedNode)
+                  );
+                  setSelectedNode(null);
+                }}
+                className="px-4 py-3 bg-blue-500/90 backdrop-blur-md text-white rounded-lg hover:bg-blue-600/90 transition-all duration-300 border border-blue-400/20 shadow-lg"
+              >
+                Save Changes
+              </button>
 
-            <button
-              onClick={() => {
-                setNodes((nds) =>
-                  nds.filter((node) => node.id !== selectedNode.id)
-                );
-                setEdges((eds) =>
-                  eds.filter(
-                    (edge) =>
-                      edge.source !== selectedNode.id &&
-                      edge.target !== selectedNode.id
-                  )
-                );
-                setSelectedNode(null);
-              }}
-              className="w-full bg-red-500 text-white p-2 rounded-md mt-4"
-            >
-              Delete Device
-            </button>
+              <button
+                onClick={() => {
+                  setNodes((nds) =>
+                    nds.filter((node) => node.id !== selectedNode.id)
+                  );
+                  setEdges((eds) =>
+                    eds.filter(
+                      (edge) =>
+                        edge.source !== selectedNode.id &&
+                        edge.target !== selectedNode.id
+                    )
+                  );
+                  setSelectedNode(null);
+                }}
+                className="px-4 py-3 bg-red-500/80 backdrop-blur-md text-white rounded-lg hover:bg-red-600/80 transition-all duration-300 border border-red-400/20 shadow-lg"
+              >
+                Delete Device
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Edge Properties Modal */}
       {selectedEdge && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
-          <div className="bg-white rounded-lg p-6 w-96 relative">
-            <button
-              onClick={() => setSelectedEdge(null)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-            >
-              <X size={20} />
-            </button>
-            <h2 className="text-xl font-bold mb-4">Connection Properties</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-xl p-6 max-w-md w-full space-y-6 transform transition-all duration-300">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Connection Properties
+              </h2>
+              <button
+                onClick={() => setSelectedEdge(null)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
                   Label
                 </label>
                 <input
-                  className="w-full border border-gray-300 rounded-md p-2"
                   type="text"
                   value={selectedEdge.data?.label || ""}
                   onChange={(e) => {
@@ -589,11 +618,12 @@ function GraphContent() {
                       data: { ...eds.data, label: e.target.value },
                     }));
                   }}
+                  className="w-full px-3 py-2 bg-white/50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                 />
               </div>
             </div>
 
-            <div className="mt-4 space-y-2">
+            <div className="flex flex-col space-y-3 pt-4 border-t border-gray-200/50">
               <button
                 onClick={() => {
                   setEdges((eds) =>
@@ -611,9 +641,9 @@ function GraphContent() {
                   );
                   setSelectedEdge(null);
                 }}
-                className="w-full bg-blue-500 text-white p-2 rounded-md"
+                className="px-4 py-3 bg-blue-500/90 backdrop-blur-md text-white rounded-lg hover:bg-blue-600/90 transition-all duration-300 border border-blue-400/20 shadow-lg"
               >
-                Save
+                Save Changes
               </button>
 
               <button
@@ -623,7 +653,7 @@ function GraphContent() {
                   );
                   setSelectedEdge(null);
                 }}
-                className="w-full bg-red-500 text-white p-2 rounded-md"
+                className="px-4 py-3 bg-red-500/80 backdrop-blur-md text-white rounded-lg hover:bg-red-600/80 transition-all duration-300 border border-red-400/20 shadow-lg"
               >
                 Delete Connection
               </button>
