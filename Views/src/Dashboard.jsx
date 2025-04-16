@@ -52,9 +52,9 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-400 via-indigo-500 to-cyan-500 animate-gradient bg-[length:400%_400%]">
+    <div className="min-h-screen bg-gradient-to-br from-blue-400/20 via-indigo-500/20 to-cyan-500/20 animate-gradient bg-[length:400%_400%]">
       {/* Header */}
-      <header className="bg-white/10 backdrop-blur-md border-b border-white/20">
+      <header className="bg-white/10 backdrop-blur-md border-b bg-gradient-to-br from-blue-400 via-indigo-500 to-cyan-500 animate-gradient bg-[length:400%_400%]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center">
             <div className="flex-shrink-0">
@@ -81,7 +81,7 @@ export default function Dashboard() {
               className="px-4 py-2 bg-white/10 backdrop-blur-md text-white rounded-lg hover:bg-white/20 transition-all duration-300 flex items-center border border-white/20 shadow-lg"
             >
               <Plus className="w-5 h-5" />
-              <span className="ml-2">New System</span>
+              <span className="ml-2 ">New System</span>
             </button>
             <button
               className="px-4 py-2 bg-red-500/80 backdrop-blur-md text-white rounded-lg hover:bg-red-600/80 transition-all duration-300 flex items-center border border-red-400/20 shadow-lg"
@@ -101,7 +101,7 @@ export default function Dashboard() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-white">Your Systems</h2>
+          <h2 className="text-2xl font-bold text-black">Your Systems</h2>
         </div>
 
         {/* Systems Grid */}

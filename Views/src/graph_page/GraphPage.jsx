@@ -63,6 +63,8 @@ function GraphContent() {
 
   const popupRef = useRef(null);
   const updated = useRef(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [systemName, setSystemName] = useState(system.Name);
 
   const onConnect = useCallback(
     (params) => {
@@ -238,24 +240,84 @@ function GraphContent() {
     focusedNodeRef.current = null;
   }, []);
 
+  const handleNameSave = async () => {
+    try {
+      await axios.patch(
+        `${import.meta.env.VITE_BASE_URL}/api/v1/${system.id}/rename-system/`,
+        { name: systemName },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          },
+        }
+      );
+      system.Name = systemName;
+      setIsEditingName(false);
+      toast.success("System name updated successfully");
+    } catch (err) {
+      toast.error("Error updating system name");
+      setSystemName(system.Name);
+      console.error(err);
+    }
+  };
+
   return (
     <div className="h-screen overflow-hidden">
       {/* Sidebar */}
       <div className="fixed top-0 left-0 z-10 w-[350px] h-full bg-gradient-to-br from-blue-400/20 via-indigo-500/20 to-cyan-500/20 animate-gradient bg-[length:400%_400%] bg-white/80 backdrop-blur-md border-r border-white/20 p-6 flex flex-col shadow-xl">
         <div className="flex flex-col h-full">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => navigate("/dashboard")}
-              className="text-gray-700 hover:bg-white/10 p-2 rounded-lg transition-all duration-200 flex items-center"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              <span className="ml-2">Back</span>
-            </button>
-          </div>
+          <button
+            onClick={() => navigate("/dashboard")}
+            className="px-4 py-3 bg-blue-500/90 backdrop-blur-md text-white rounded-lg hover:bg-blue-600/90 transition-all duration-300 flex items-center justify-center border border-blue-400/20 shadow-lg"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="ml-2">Back</span>
+          </button>
           <h2 className="text-lg font-semibold text-gray-900 mt-6">System:</h2>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {system.Name}
-            <div className="inline-flex items-center ml-2">
+          <div className="flex items-center space-x-2">
+            {isEditingName ? (
+              <div className="flex-1 flex items-center space-x-2 w-full relative">
+                <input
+                  type="text"
+                  value={systemName}
+                  onChange={(e) => setSystemName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleNameSave();
+                    } else if (e.key === "Escape") {
+                      setSystemName(system.Name);
+                      setIsEditingName(false);
+                    }
+                  }}
+                  className="w-full flex-1 px-3 pr-20 py-2 bg-white/50 border border-gray-200 rounded-lg text-2xl font-bold focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  autoFocus
+                />
+                <button
+                  onClick={handleNameSave}
+                  className="p-2 hover:bg-blue-100 rounded-lg text-blue-600 transition-colors duration-200 absolute right-2"
+                >
+                  <Save className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => {
+                    setSystemName(system.Name);
+                    setIsEditingName(false);
+                  }}
+                  className="p-2 hover:bg-red-100 rounded-lg text-red-600 transition-colors duration-200 absolute right-12"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            ) : (
+              <h1 
+                onClick={() => setIsEditingName(true)}
+                className="text-2xl font-bold text-gray-900 cursor-pointer hover:bg-white/30 px-3 py-2 rounded-lg transition-all duration-200 flex-1"
+              >
+                {systemName}
+              </h1>
+            )}
+            <div className="inline-flex items-center">
               <select
                 value={version}
                 onChange={(e) => {
@@ -266,7 +328,7 @@ function GraphContent() {
                     });
                   }
                 }}
-                className="ml-2 text-sm bg-white/50 border border-gray-200 text-gray-700 rounded-lg px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 cursor-pointer hover:bg-white/70"
+                className="text-sm bg-white/50 border border-gray-200 text-gray-700 rounded-lg px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 cursor-pointer hover:bg-white/70"
               >
                 {Array.from({ length: system.Version }, (_, i) => (
                   <option key={i + 1} value={i + 1}>
@@ -275,7 +337,7 @@ function GraphContent() {
                 ))}
               </select>
             </div>
-          </h1>
+          </div>
 
           <div className="flex flex-col space-y-3 mt-6">
             <button

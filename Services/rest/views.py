@@ -104,7 +104,7 @@ class DeleteSystemView(APIView):
 
 class RenameSystemView(APIView):
     permission_classes = [IsAuthenticated]
-    def post(self, request, systemId, *args, **kwargs):
+    def patch(self, request, systemId, *args, **kwargs):
         user = request.user
         system = System.objects.get(id=systemId, User=user)
         system.Name = request.data.get('name')
