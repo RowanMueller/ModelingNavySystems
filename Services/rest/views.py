@@ -12,7 +12,7 @@ from rest_framework import status
 from .models import Connection, Device, System
 from rest_framework.permissions import IsAuthenticated
 from functools import wraps
-from django.http import JsonResponse
+from django.http import HttpResponse
 
 import re
 import pandas as pd
@@ -389,8 +389,144 @@ class SystemDetailView(APIView):
         serializer = SystemSerializer(system)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
+class DownloadSysMLView(APIView): 
+    permission_classes = [IsAuthenticated]
+    def get(self, request, systemId, version):
+        user = request.user
 
+        if not systemId or not version:
+            return Response({"error": "system_id and version are required."},
+                            status=status.HTTP_400_BAD_REQUEST)
 
-# 1. Do save graph if I'm given system_id, increment version and system_id, system_version, devices, and connections. treat devices and connections
-# like new version track x and y values. 
-# 2. upload new system version if i'm given a file 
+        try:
+            # Get the system for the authenticated user
+            system = System.objects.get(id=systemId, User=user, Version=version)
+
+            # Fetch versioned devices and connections
+            devices = Device.objects.filter(System=system, SystemVersion=version)
+            connections = Connection.objects.filter(System=system, SystemVersion=version)
+
+            # Generate SysML file content
+            sysml_content = self.write_sysml_text(system, devices, connections)
+            # Create the response with appropriate headers
+            response = HttpResponse(sysml_content, content_type='text/plain')
+            response['Content-Disposition'] = f'attachment; filename="system_{systemId}_v{version}.sysml"'
+            return response 
+        except System.DoesNotExist:
+            return Response({"error": "System not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    def write_sysml_text(self, system, devices, connections): 
+        device_serializer = DeviceSerializer(devices, many=True)
+        connections_serializer = ConnectionSerializer(connections, many=True)
+        devices_data = device_serializer.data
+        connections = connections_serializer.data
+        text = self.write_devices(devices_data) + "\n\n" + self.write_connections(connections)
+        return text
+
+    def write_devices(self, devices_data):
+        # Define package for devices
+        package = """
+package Devices {
+
+    part def Device {
+        property AssetId: String;
+        property Manufacturer: String?;
+        property ModelNumber: String?;
+        property AssetName: String?;
+        property SerialNumber: String?;
+        property Comments: String?;
+        property AssetCostAmount: Float?;
+        property NetBookValueAmount: String?;
+        property Ownership: String?;
+        property InventoryDate: String?;
+        property DatePlacedInService: String?;
+        property UsefulLifePeriods: String?;
+        property AssetType: String?;
+        property LocationID: String?;
+        property BuildingNumber: String?;
+        property BuildingName: String?;
+        property Floor: String?;
+        property RoomNumber: String?;
+        property AdditionalAsJson: Json?;
+        property Xposition: Float?;
+        property Yposition: Float?;
+    }
+\n
+"""
+
+        COLUMN_MAPPING = {
+            "AssetId": "assetIdentifier",
+            "Manufacturer": "manufacturer",
+            "ModelNumber": "modelNumber",
+            "AssetName": "assetName",
+            "SerialNumber": "serialNumber",
+            "Comments": "comments",
+            "AssetCostAmount": "assetCostAmount",
+            "NetBookValueAmount": "netBookValueAmount",
+            "Ownership": "ownership",
+            "InventoryDate": "inventoryDate",
+            "DatePlacedInService": "datePlacedInService",
+            "UsefulLifePeriods": "usefulLifePeriods",
+            "AssetType": "assetType",
+            "LocationID": "locationID",
+            "BuildingNumber": "buildingNumber",
+            "BuildingName": "buildingName",
+            "Floor": "floor",
+            "RoomNumber": "roomNumber",
+        }
+
+        output = package
+
+        for device in devices_data:
+            # Use AssetName or fallback to AdditionalAsJson.label or "Unnamed_Device"
+            name = device.get("AssetName")
+            if not name:
+                name = device.get("AdditionalAsJson", {}).get("label", "Unnamed_Device")
+            name = name.upper()
+
+            output += f'    part instance {name}: Device {{\n'
+
+            for original_key, formatted_key in COLUMN_MAPPING.items():
+                value = device.get(original_key)
+                if value is None:
+                    continue
+
+                if isinstance(value, str):
+                    value_str = f'"{value}"'
+                else:
+                    value_str = value
+
+                output += f'         {formatted_key} = {value_str};\n'
+
+            output += '    }\n\n'
+        output += "}"
+        return output
+    
+    def write_connections(self, connections_data):
+        # Define connections package in sysml 
+        package = """
+package Connections {
+
+    part def DeviceConnection {
+        property ConnectionType: String;
+        property ConnectionDetails: Json?;
+        part Source: Devices::Device;
+        part Target: Devices::Device;
+    }
+\n
+"""
+
+        output = package 
+        for connection in connections_data:
+            connection_type = connection.get("ConnectionType")
+            source = connection.get("Source")
+            target = connection.get("Target")
+            connection_details = connection.get("ConnectionDetails")
+            output += f'    part instance {source} -> {target}::DeviceConnection {{\n'
+            output += f'        connectionType = "{connection_type}";\n'
+            output += f'        connectionDetails = "{connection_details}";\n'
+            output += f'        source = "{source}";\n'  
+            output += f'        target = "{target}";\n' 
+            output += '    }\n\n'
+        output += "}"
+        return output
