@@ -390,7 +390,7 @@ function GraphContent() {
                     const blob = new Blob([res.data], {
                       type: res.headers["content-type"],
                     });
-                    let filename = "downloadedFile";
+                    let filename = system.Name + "_v" + system.Version + ".sysml";
                     const contentDisposition =
                       res.headers["content-disposition"];
                     if (contentDisposition) {
