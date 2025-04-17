@@ -44,6 +44,8 @@ package Devices {
         buildingNumber = "BL0270";
         floor = "03";
         roomNumber = "362";
+        xPosition = -105.0;
+        yPosition = -22.0;
     }
 
     part instance CAMERA, DIGITAL W/SCSI COMPUTER BOARD & POWER SUPPLY: Device {
@@ -63,6 +65,8 @@ package Devices {
         locationID = "FM_0204";
         buildingName = "B228 Eichenthal Room";
         buildingNumber = "BL0204";
+        xPosition = 243.79354248907467;
+        yPosition = -90.0533765559308;
     }
 
     part instance COMPUTER WORKSTATION, OCTANE/MX DUAL (CPU ONLY) W/ACCESSORIES: Device{
@@ -84,6 +88,8 @@ package Devices {
         buildingNumber = "BL0270";
         floor = "02";
         roomNumber = "221";
+        xPosition = 313.473908637616;
+        yPosition = 126.0;
     }
 }
 
@@ -106,4 +112,3 @@ package DeviceConnections {
         target = Devices::COMPUTER WORKSTATION, OCTANE/MX DUAL (CPU ONLY) W/ACCESSORIES;
     }
 }
- 

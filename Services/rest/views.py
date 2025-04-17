@@ -199,7 +199,7 @@ class FileUploadView(APIView):
             "system": SystemSerializer(system).data
         }, status=status.HTTP_201_CREATED)
     
-    def read_sysml(self, file): #TODO have it so it parses data when it's on the next line 
+    def read_sysml(self, file):
         # Read and decode the SysML file
         # Column mapping to convert SysML names to proper Django names: YOU HAVE TO CHANGE THIS EVERY TIME YOU CHANGE THE MODEL
         COLUMN_MAPPING = {
@@ -221,6 +221,8 @@ class FileUploadView(APIView):
             "buildingName": "Building Name",
             "floor": "Floor",
             "roomNumber": "Room Number",
+            "xPosition": "Xposition",
+            "yPosition": "Yposition",
         }
 
         sysml_content = file.read().decode('utf-8')
@@ -474,6 +476,8 @@ package Devices {
             "BuildingName": "buildingName",
             "Floor": "floor",
             "RoomNumber": "roomNumber",
+            "Xposition": "xPosition",
+            "Yposition": "yPosition",
         }
 
         output = package
@@ -483,7 +487,7 @@ package Devices {
             name = device.get("AssetName")
             if not name:
                 name = device.get("AdditionalAsJson", {}).get("label", "Unnamed_Device")
-            name = name.upper()
+            name = name.upper().replace(" ", "_")
 
             output += f'    part instance {name}: Device {{\n'
 
@@ -491,15 +495,22 @@ package Devices {
                 value = device.get(original_key)
                 if value is None:
                     continue
-
+                
                 if isinstance(value, str):
                     value_str = f'"{value}"'
                 else:
                     value_str = value
-
                 output += f'         {formatted_key} = {value_str};\n'
 
-            output += '    }\n\n'
+            # Add each AdditionalAsJson key as a property assignment (String)
+            additional = device.get("AdditionalAsJson", {})
+            for k, v in additional.items():
+                if isinstance(v, (dict, list)):
+                    continue  # Skip nested structures
+                v_str = f'"{v}"' if not isinstance(v, (int, float)) else v
+                key_name = k.replace(" ", "_")  # sanitize key name
+                output += f'         {key_name} = {v_str};\n'
+            output += '    }\n\n'        
         output += "}"
         return output
     
@@ -509,10 +520,10 @@ package Devices {
 package Connections {
 
     part def DeviceConnection {
-        property ConnectionType: String;
-        property ConnectionDetails: Json?;
-        part Source: Devices::Device;
-        part Target: Devices::Device;
+        property connectionType: String;
+        property connectionDetails: Json?;
+        property source: Float?;
+        property target: Float?;
     }
 \n
 """
@@ -520,14 +531,20 @@ package Connections {
         output = package 
         for connection in connections_data:
             connection_type = connection.get("ConnectionType")
-            source = connection.get("Source")
-            target = connection.get("Target")
+            source_id = connection.get("Source")
+            target_id = connection.get("Target")
+            print(f"Source ID: {type(source_id)}, Target ID: {target_id}")
+            source_device = Device.objects.get(id=source_id)
+            target_device = Device.objects.get(id=target_id)
+            source = source_device.AssetName if source_device else "Unknown_Source"
+            target = target_device.AssetName if target_device else "Unknown_Target"
+            print(f"Source: {source_device}, Target: {target_device}")
             connection_details = connection.get("ConnectionDetails")
             output += f'    part instance {source} -> {target}::DeviceConnection {{\n'
             output += f'        connectionType = "{connection_type}";\n'
             output += f'        connectionDetails = "{connection_details}";\n'
             output += f'        source = "{source}";\n'  
             output += f'        target = "{target}";\n' 
-            output += '    }\n\n'
+            output += '    }\n'
         output += "}"
         return output
