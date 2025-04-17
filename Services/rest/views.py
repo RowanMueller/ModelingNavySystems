@@ -129,9 +129,10 @@ class FileUploadView(APIView):
             return Response({"error": "No files provided"}, status=status.HTTP_400_BAD_REQUEST)
 
         name = request.data.get('name')
+        version = request.data.get('version')
         if name is None:
             return Response({"error": "System name is required"}, status=status.HTTP_400_BAD_REQUEST)
-        system = System(User=request.user, Name=name)
+        system = System(User=request.user, Name=name, Version=version)
         system.save()
 
         uploaded_files = []

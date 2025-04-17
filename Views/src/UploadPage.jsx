@@ -126,7 +126,7 @@ export default function UploadPage() {
                     .post(
                       `${import.meta.env.VITE_BASE_URL}/api/v1/create-system/`,
                       {
-                        version: files.length === 0,
+                        version: 0,
                         name: systemName,
                       },
                       {
@@ -154,7 +154,7 @@ export default function UploadPage() {
                 const formData = new FormData();
                 files.forEach((file) => formData.append("files", file));
                 formData.append("name", systemName);
-                
+                formData.append("version", 1);
                 axios
                   .post(
                     `${import.meta.env.VITE_BASE_URL}/api/v1/upload/`,
@@ -170,7 +170,7 @@ export default function UploadPage() {
                   )
                   .then((response) => {
                     toast.success("Successfully uploaded files");
-                    navigate(`/system/${response.data.system.id}`, {
+                    navigate(`/system/${response.data.system.id}/1`, {
                       state: {
                         system: response.data.system,
                       },
