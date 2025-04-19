@@ -60,7 +60,9 @@ export default function SignUp() {
     }
   };
 
-  return (
+  return isLoading ? (
+    <Loading />
+  ) : (
     <div className="min-h-screen bg-gradient-to-br from-blue-400 via-indigo-500 flex items-center justify-center p-4 animate-gradient bg-[length:400%_400%]">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6 transform transition-all duration-300 hover:scale-[1.01]">
@@ -168,11 +170,7 @@ export default function SignUp() {
                 isLoading ? "opacity-75 cursor-not-allowed" : ""
               }`}
             >
-              {isLoading ? (
-                <Loading />
-              ) : (
-                "Sign up"
-              )}
+              "Sign up"
             </button>
 
             <div className="text-center text-sm">
