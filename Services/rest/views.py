@@ -125,175 +125,299 @@ class GetAllDevices(APIView):
 class FileUploadView(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request, *args, **kwargs):
-        if 'files' not in request.FILES:
-            return Response({"error": "No files provided"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            if 'files' not in request.FILES:
+                return Response({"error": "No files provided"}, status=status.HTTP_400_BAD_REQUEST)
 
-        name = request.data.get('name')
-        version = request.data.get('version')
-        if name is None:
-            return Response({"error": "System name is required"}, status=status.HTTP_400_BAD_REQUEST)
-        system = System(User=request.user, Name=name, Version=version)
-        system.save()
+            name = request.data.get('name')
+            version = request.data.get('version')
+            if name is None:
+                return Response({"error": "System name is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        uploaded_files = []
-        for file in request.FILES.getlist('files'):  # Handle multiple files
-            # Saves each file under 'uploads/' directory
-            file_path = default_storage.save(f"uploads/{file.name}", ContentFile(file.read()))
-            uploaded_files.append({
-                "file_name": file.name,
-                "file_size": file.size,
-                "file_path": file_path
-            })
-            
-        for file in request.FILES.getlist('files'):
-            #extract data and save to the Device model
-            file.seek(0)
-            
-            if (file.name.endswith('.sysml')):
-                self.parse_sysml_file(file, system, version or 1)
-                continue
-            elif file.name.endswith('.csv'):
-                # Reads CSV file into a pandas dataframe
-                df = pd.read_csv(file, encoding="utf-8")
-            elif file.name.endswith('.xls') or file.name.endswith('.xlsx'):
-                print(f"Reading Excel file: {file.name}")
-                df = pd.read_excel(file)
-            else:
+            try:
+                system = System(User=request.user, Name=name, Version=version)
+                system.save()
+            except Exception as e:
+                return Response({"error": f"Error creating system: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+            uploaded_files = []
+            processing_results = []
+
+            for file in request.FILES.getlist('files'):
+                try:
+                    # Save file
+                    file_path = default_storage.save(f"uploads/{file.name}", ContentFile(file.read()))
+                    uploaded_files.append({
+                        "file_name": file.name,
+                        "file_size": file.size,
+                        "file_path": file_path
+                    })
+                    
+                    # Reset file pointer for processing
+                    file.seek(0)
+                    
+                    # Process file based on type
+                    if file.name.endswith('.sysml'):
+                        try:
+                            result = self.parse_sysml_file(file, system, version or 1)
+                            processing_results.append({
+                                'file_name': file.name,
+                                'type': 'sysml',
+                                'status': 'success',
+                                **result
+                            })
+                        except ValueError as e:
+                            processing_results.append({
+                                'file_name': file.name,
+                                'type': 'sysml',
+                                'status': 'error',
+                                'error': str(e)
+                            })
+                    elif file.name.endswith('.csv'):
+                        try:
+                            df = pd.read_csv(file, encoding="utf-8")
+                            # Process CSV data...
+                            processing_results.append({
+                                'file_name': file.name,
+                                'type': 'csv',
+                                'status': 'success',
+                                'rows_processed': len(df)
+                            })
+                        except Exception as e:
+                            processing_results.append({
+                                'file_name': file.name,
+                                'type': 'csv',
+                                'status': 'error',
+                                'error': f"Error processing CSV file: {str(e)}"
+                            })
+                    elif file.name.endswith('.xls') or file.name.endswith('.xlsx'):
+                        try:
+                            df = pd.read_excel(file)
+                            # Process Excel data...
+                            processing_results.append({
+                                'file_name': file.name,
+                                'type': 'excel',
+                                'status': 'success',
+                                'rows_processed': len(df)
+                            })
+                        except Exception as e:
+                            processing_results.append({
+                                'file_name': file.name,
+                                'type': 'excel',
+                                'status': 'error',
+                                'error': f"Error processing Excel file: {str(e)}"
+                            })
+                    else:
+                        processing_results.append({
+                            'file_name': file.name,
+                            'type': 'unknown',
+                            'status': 'error',
+                            'error': "Invalid file format. Please upload a CSV, Excel, or SysML file."
+                        })
+                except Exception as e:
+                    processing_results.append({
+                        'file_name': file.name,
+                        'type': 'unknown',
+                        'status': 'error',
+                        'error': f"Error processing file: {str(e)}"
+                    })
+
+            # Check if any files were processed successfully
+            if not any(result['status'] == 'success' for result in processing_results):
+                # If all files failed, delete the system and return error
+                system.delete()
                 return Response({
-                    "error": "Invalid file format. Please upload a CSV, Excel, or SysML file."
+                    "error": "No files were processed successfully",
+                    "processing_results": processing_results
                 }, status=status.HTTP_400_BAD_REQUEST)
-            
-            y = 0 
-            for _, row in df.iterrows():
-                device = Device(
-                    AssetId=row.get('Asset Identifier'),
-                    Manufacturer=row.get('Manufacturer'),
-                    ModelNumber=row.get('Model Number'),
-                    AssetName=row.get('Asset Name'),
-                    SerialNumber=row.get('Serial Number'),
-                    Comments=row.get('Comments'),
-                    AssetCostAmount=row.get('Asset Cost Amount'),
-                    NetBookValueAmount=row.get('Net Book Value Amount'),
-                    Ownership=row.get('Ownership'),
-                    InventoryDate=row.get('Inventory Date'),
-                    DatePlacedInService=row.get('Date Placed In Service'),
-                    UsefulLifePeriods=row.get('Useful Life Periods'),
-                    AssetType=row.get('Asset Type'),
-                    LocationID=row.get('Location ID'), 
-                    BuildingNumber=row.get('Building Number'), 
-                    BuildingName=row.get('Building Name'), 
-                    Floor=row.get('Floor'),
-                    RoomNumber=row.get('Room Number'), 
-                    AdditionalAsJson=row.get('Additional JSON'),
-                    Xposition=row.get('Xposition', 0),
-                    Yposition=row.get('Yposition', y),
-                    SystemVersion=1,
-                    System=system
-                )
-                device.save()
-                if row.get('Yposition') is None: 
-                    y += 50 
-        return Response({
-            "message": "Files uploaded successfully",
-            "files": uploaded_files,
-            "system": SystemSerializer(system).data
-        }, status=status.HTTP_201_CREATED)
+
+            return Response({
+                "message": "Files processed",
+                "files": uploaded_files,
+                "processing_results": processing_results,
+                "system": SystemSerializer(system).data
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            # If system was created, try to delete it in case of error
+            try:
+                if 'system' in locals():
+                    system.delete()
+            except:
+                pass
+            return Response({
+                "error": f"Error processing upload: {str(e)}"
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def parse_sysml_file(self, file, system, version):
-        # Read the file content
-        sysml_content = file.read().decode('utf-8')
-        
-        # Standard fields that map directly to Device model
-        STANDARD_FIELDS = {
-            "assetIdentifier": "AssetId",
-            "manufacturer": "Manufacturer",
-            "modelNumber": "ModelNumber",
-            "assetName": "AssetName",
-            "serialNumber": "SerialNumber",
-            "comments": "Comments",
-            "assetCostAmount": "AssetCostAmount",
-            "netBookValueAmount": "NetBookValueAmount",
-            "ownership": "Ownership",
-            "inventoryDate": "InventoryDate",
-            "datePlacedInService": "DatePlacedInService",
-            "usefulLifePeriods": "UsefulLifePeriods",
-            "assetType": "AssetType",
-            "locationID": "LocationID",
-            "buildingNumber": "BuildingNumber",
-            "buildingName": "BuildingName",
-            "floor": "Floor",
-            "roomNumber": "RoomNumber",
-            "xPosition": "Xposition",
-            "yPosition": "Yposition",
-        }
-
-        # Parse device instances
-        device_pattern = r"part instance (\d+): Device\s*{([^}]*)}"
-        device_matches = re.findall(device_pattern, sysml_content)
-        
-        # Store mapping of SysML ID to Django Device object
-        sysml_id_to_device = {}
-        
-        # Process each device
-        for sysml_id, attributes in device_matches:
-            device_data = {
-                'System': system,
-                'SystemVersion': version
-            }
-            additional_data = {}
+        try:
+            # Read the file content
+            try:
+                sysml_content = file.read().decode('utf-8')
+            except UnicodeDecodeError:
+                raise ValueError("Invalid file encoding. The SysML file must be UTF-8 encoded.")
+            except Exception as e:
+                raise ValueError(f"Error reading SysML file: {str(e)}")
             
-            # Process each attribute line
-            for line in attributes.strip().splitlines():
-                line = line.strip()
-                if '=' in line:
-                    field_name, field_value = line.split('=', 1)
-                    field_name = field_name.strip()
-                    field_value = field_value.strip().strip('";')
+            # Standard fields that map directly to Device model
+            STANDARD_FIELDS = {
+                "assetIdentifier": "AssetId",
+                "manufacturer": "Manufacturer",
+                "modelNumber": "ModelNumber",
+                "assetName": "AssetName",
+                "serialNumber": "SerialNumber",
+                "comments": "Comments",
+                "assetCostAmount": "AssetCostAmount",
+                "netBookValueAmount": "NetBookValueAmount",
+                "ownership": "Ownership",
+                "inventoryDate": "InventoryDate",
+                "datePlacedInService": "DatePlacedInService",
+                "usefulLifePeriods": "UsefulLifePeriods",
+                "assetType": "AssetType",
+                "locationID": "LocationID",
+                "buildingNumber": "BuildingNumber",
+                "buildingName": "BuildingName",
+                "floor": "Floor",
+                "roomNumber": "RoomNumber",
+                "xPosition": "Xposition",
+                "yPosition": "Yposition",
+            }
+
+            # Parse device instances
+            device_pattern = r"part instance (\d+): Device\s*{([^}]*)}"
+            device_matches = re.findall(device_pattern, sysml_content)
+            
+            if not device_matches:
+                raise ValueError("No valid device definitions found in the SysML file.")
+            
+            # Store mapping of SysML ID to Django Device object
+            sysml_id_to_device = {}
+            created_devices = []
+            created_connections = []
+            
+            # Process each device
+            for sysml_id, attributes in device_matches:
+                try:
+                    device_data = {
+                        'System': system,
+                        'SystemVersion': version
+                    }
+                    additional_data = {}
                     
-                    # Convert numeric strings to proper types
-                    if field_value.replace('.', '', 1).replace('-', '', 1).isdigit():
-                        if '.' in field_value:
-                            field_value = float(field_value)
-                        else:
-                            field_value = int(field_value)
+                    # Process each attribute line
+                    for line in attributes.strip().splitlines():
+                        line = line.strip()
+                        if '=' in line:
+                            try:
+                                field_name, field_value = line.split('=', 1)
+                                field_name = field_name.strip()
+                                field_value = field_value.strip().strip('";')
+                                
+                                # Convert numeric strings to proper types
+                                if field_value.replace('.', '', 1).replace('-', '', 1).isdigit():
+                                    try:
+                                        if '.' in field_value:
+                                            field_value = float(field_value)
+                                        else:
+                                            field_value = int(field_value)
+                                    except ValueError:
+                                        print(f"Warning: Could not convert value '{field_value}' to number for field '{field_name}'")
+                                        
+                                # Map to standard field if exists
+                                if field_name in STANDARD_FIELDS:
+                                    device_data[STANDARD_FIELDS[field_name]] = field_value
+                                else:
+                                    # Store non-standard fields in additional_data
+                                    additional_data[field_name] = field_value
+                            except Exception as e:
+                                print(f"Warning: Error processing line '{line}': {str(e)}")
+                                continue
+                    
+                    # Store additional data as JSON
+                    if additional_data:
+                        device_data['AdditionalAsJson'] = additional_data
+                        
+                    # Create and save the device
+                    try:
+                        device = Device.objects.create(**device_data)
+                        sysml_id_to_device[sysml_id] = device
+                        created_devices.append(device)
+                    except Exception as e:
+                        raise ValueError(f"Error creating device with ID {sysml_id}: {str(e)}")
+                        
+                except Exception as e:
+                    print(f"Error processing device {sysml_id}: {str(e)}")
+                    # Clean up any devices created so far if we encounter an error
+                    for device in created_devices:
+                        try:
+                            device.delete()
+                        except:
+                            pass
+                    raise
+            
+            # Parse connections
+            try:
+                connection_pattern = r"part instance (\d+) -> (\d+)::DeviceConnection\s*{([^}]*)}"
+                connection_matches = re.findall(connection_pattern, sysml_content)
+                
+                # Process each connection
+                for source_id, target_id, attributes in connection_matches:
+                    try:
+                        if source_id not in sysml_id_to_device or target_id not in sysml_id_to_device:
+                            raise ValueError(f"Invalid connection: Device with ID {source_id if source_id not in sysml_id_to_device else target_id} not found")
                             
-                    # Map to standard field if exists
-                    if field_name in STANDARD_FIELDS:
-                        device_data[STANDARD_FIELDS[field_name]] = field_value
-                    else:
-                        # Store non-standard fields in additional_data
-                        additional_data[field_name] = field_value
-            
-            # Store additional data as JSON
-            if additional_data:
-                device_data['AdditionalAsJson'] = additional_data
-                
-            # Create and save the device
-            device = Device.objects.create(**device_data)
-            sysml_id_to_device[sysml_id] = device
-            
-        # Parse connections
-        connection_pattern = r"part instance (\d+) -> (\d+)::DeviceConnection\s*{([^}]*)}"
-        connection_matches = re.findall(connection_pattern, sysml_content)
-        
-        # Process each connection
-        for source_id, target_id, attributes in connection_matches:
-            connection_data = {
-                'System': system,
-                'SystemVersion': version,
-                'Source': sysml_id_to_device[source_id],
-                'Target': sysml_id_to_device[target_id]
-            }
-            
-            # Extract connection type
-            connection_type_match = re.search(r'connectionType = "([^"]*)"', attributes)
-            if connection_type_match:
-                connection_data['ConnectionType'] = connection_type_match.group(1)
-                
-            # Create the connection
-            Connection.objects.create(**connection_data)
+                        connection_data = {
+                            'System': system,
+                            'SystemVersion': version,
+                            'Source': sysml_id_to_device[source_id],
+                            'Target': sysml_id_to_device[target_id]
+                        }
+                        
+                        # Extract connection type
+                        connection_type_match = re.search(r'connectionType = "([^"]*)"', attributes)
+                        if connection_type_match:
+                            connection_data['ConnectionType'] = connection_type_match.group(1)
+                        else:
+                            connection_data['ConnectionType'] = 'default'  # Provide a default type if none specified
+                            
+                        # Create the connection
+                        connection = Connection.objects.create(**connection_data)
+                        created_connections.append(connection)
+                    except Exception as e:
+                        print(f"Error creating connection {source_id}->{target_id}: {str(e)}")
+                        # If connection creation fails, continue with other connections
+                        continue
+                        
+            except Exception as e:
+                # If connection parsing fails entirely, clean up devices and re-raise
+                for device in created_devices:
+                    try:
+                        device.delete()
+                    except:
+                        pass
+                raise ValueError(f"Error parsing connections: {str(e)}")
 
-        return len(device_matches), len(connection_matches)
+            return {
+                'devices_created': len(created_devices),
+                'connections_created': len(created_connections),
+                'message': 'Successfully parsed SysML file'
+            }
+
+        except Exception as e:
+            # Clean up any created objects in case of error
+            try:
+                for device in created_devices:
+                    device.delete()
+            except:
+                pass
+            
+            try:
+                for connection in created_connections:
+                    connection.delete()
+            except:
+                pass
+                
+            raise ValueError(f"Error processing SysML file: {str(e)}")
 
 class GetAllSystems(APIView):
     permission_classes = [IsAuthenticated]
