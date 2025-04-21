@@ -17,6 +17,7 @@ import json
 import re
 import pandas as pd
 from django.contrib.auth.models import User
+# import time
 
 # Create your views here.
 
@@ -123,6 +124,7 @@ class GetAllDevices(APIView):
 class FileUploadView(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request, *args, **kwargs):
+        # start_time = time.time()
         try:
             if 'files' not in request.FILES:
                 return Response({"error": "No files provided"}, status=status.HTTP_400_BAD_REQUEST)
@@ -228,6 +230,9 @@ class FileUploadView(APIView):
                     "error": "No files were processed successfully",
                     "processing_results": processing_results
                 }, status=status.HTTP_400_BAD_REQUEST)
+
+            # end_time = time.time()
+            # print(f"Time taken for file upload: {end_time - start_time} seconds")
 
             return Response({
                 "message": "Files processed",
@@ -576,6 +581,7 @@ class SystemDetailView(APIView):
 class DownloadSysMLView(APIView): 
     permission_classes = [IsAuthenticated]
     def get(self, request, systemId, version):
+        # start_time = time.time()
         user = request.user
 
         if not systemId or not version:
@@ -595,6 +601,8 @@ class DownloadSysMLView(APIView):
             # Create the response with appropriate headers
             response = HttpResponse(sysml_content, content_type='text/plain')
             response['Content-Disposition'] = f'attachment; filename="system_{systemId}_v{version}.sysml"'
+            # end_time = time.time()
+            # print(f"Time taken for sysml file download: {end_time - start_time} seconds")
             return response 
         except System.DoesNotExist:
             return Response({"error": "System not found."}, status=status.HTTP_404_NOT_FOUND)
