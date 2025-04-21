@@ -61,10 +61,8 @@ class GetConnectionsView(APIView):
             # Verify the System exists for the given userId
             system = System.objects.get(id=systemId, User_id=user_id)
             # Fetch all Connections for the 
-            print(systemId, version)
             connections = Connection.objects.filter(System=system, SystemVersion=version)
             serializer = ConnectionSerializer(connections, many=True)
-            print(serializer.data)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except System.DoesNotExist:
             return Response(
@@ -380,6 +378,25 @@ class FileUploadView(APIView):
                         else:
                             connection_data['ConnectionType'] = 'default'  # Provide a default type if none specified
                             
+                        # Extract connection details
+                        connection_details = {}
+                        for line in attributes.strip().splitlines():
+                            line = line.strip()
+                            if '=' in line:
+                                field_name, field_value = line.split('=', 1)
+                                field_name = field_name.strip()
+                                field_value = field_value.strip().strip('";')
+                                
+                                # Skip standard fields
+                                if field_name in ['connectionType', 'source', 'target']:
+                                    continue
+                                    
+                                # Add to connection details
+                                connection_details[field_name] = field_value
+                                
+                        if connection_details:
+                            connection_data['ConnectionDetails'] = connection_details
+
                         # Create the connection
                         connection = Connection.objects.create(**connection_data)
                         created_connections.append(connection)
@@ -504,14 +521,23 @@ class SaveSystem(APIView):
             for connection_data in connections:
                 source = connection_data.get("source")
                 target = connection_data.get("target")
-                data = connection_data.get("data", {}) # id refers to json 
-                connection_type = data['label']
+                data = connection_data.get("data", {})
+                
+                # Extract connection type from label
+                connection_type = data.get('label', 'default')
+                
+                # Create connection details dictionary excluding label
+                connection_details = {}
+                for key, value in data.items():
+                    if key != 'label' and value is not None:
+                        connection_details[key] = value
 
                 Connection.objects.create(
                     System=system, 
                     Source=id_to_device[source], 
                     Target=id_to_device[target], 
                     ConnectionType=connection_type,
+                    ConnectionDetails=connection_details,
                     SystemVersion=version
                 )
 
@@ -685,12 +711,18 @@ class DownloadSysMLView(APIView):
             connection_type = connection.get("ConnectionType")
             source_id = connection.get("Source")
             target_id = connection.get("Target")
-            connection_details = connection.get("ConnectionDetails")
+            connection_details = connection.get("ConnectionDetails", {})
+            
             output += f'    part instance {source_id} -> {target_id}::DeviceConnection {{\n'
             output += f'        connectionType = "{connection_type}";\n'
-            output += f'        connectionDetails = "{connection_details or ""}";\n'
             output += f'        source = Devices::{source_id};\n'  
-            output += f'        target = Devices::{target_id};\n' 
+            output += f'        target = Devices::{target_id};\n'
+            
+            # Write additional fields from connection details
+            if isinstance(connection_details, dict):
+                for key, value in connection_details.items():
+                    output += f'        {key} = "{value}";\n'
+            
             output += '    }\n'
         output += "}"
         return output

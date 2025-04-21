@@ -22,14 +22,13 @@ export default function CustomEdge({
     targetPosition,
   });
 
-  console.log(edges);
-
+  console.log(data);
   return (
     <>
       <BaseEdge id={id} path={edgePath} />
       <EdgeLabelRenderer>
         <div
-          className="absolute -translate-x-1/2 -translate-y-1/2 bg-white p-1 rounded text-xs pointer-events-auto cursor-pointer"
+          className="absolute -translate-x-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm p-2 rounded-lg shadow-lg text-sm pointer-events-auto cursor-pointer hover:bg-white/90 transition-all duration-200 border border-gray-200/50"
           style={{
             transform: `translate(${labelX}px,${labelY}px)`,
           }}
@@ -39,7 +38,16 @@ export default function CustomEdge({
             setSelectedEdge(edge);
           }}
         >
-          {data?.label || ""}
+          <div className="font-medium">{data?.label || "New Connection"}</div>
+          {/* {data?.connectionDetails && Object.keys(data.connectionDetails).length > 0 && (
+            <div className="text-xs text-gray-600 mt-1">
+              {Object.entries(data.connectionDetails).map(([key, value]) => (
+                <div key={key}>
+                  <span className="font-medium">{key}:</span> {value}
+                </div>
+              ))}
+            </div>
+          )} */}
         </div>
       </EdgeLabelRenderer>
     </>

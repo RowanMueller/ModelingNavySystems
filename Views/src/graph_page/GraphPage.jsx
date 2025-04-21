@@ -56,13 +56,13 @@ function GraphContent() {
   const [onDelete, setOnDelete] = useState(false);
   const focusedNodeRef = useRef(null);
   const [newProperty, setNewProperty] = useState("");
+  const [newConnectionProperty, setNewConnectionProperty] = useState("");
   const location = useLocation();
   const { version } = useParams();
 
   const system = location.state.system;
 
   const popupRef = useRef(null);
-  const updated = useRef(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [systemName, setSystemName] = useState(system.Name);
 
@@ -71,7 +71,10 @@ function GraphContent() {
       const newEdge = {
         ...params,
         type: "custom",
-        data: { label: "New Connection" },
+        data: {
+          label: "New Connection",
+          connectionDetails: {},
+        },
       };
       setEdges((eds) => addEdge(newEdge, eds));
     },
@@ -149,7 +152,10 @@ function GraphContent() {
               target: newNodes.find(
                 (node) => node.data.id === connection.Target
               ).id,
-              data: { label: connection.ConnectionType },
+              data: {
+                label: connection.ConnectionType,
+                ...connection.ConnectionDetails,
+              },
               type: "custom",
             };
           });
@@ -211,7 +217,7 @@ function GraphContent() {
           },
         }
       )
-      .then((res) => {
+      .then(() => {
         toast.success("Graph saved successfully");
         navigate(`/system/${system.id}/${system.Version + 1}`, {
           state: {
@@ -236,7 +242,7 @@ function GraphContent() {
     focusedNodeRef.current = node;
   }, []);
 
-  const onNodeMouseLeave = useCallback((event, node) => {
+  const onNodeMouseLeave = useCallback(() => {
     focusedNodeRef.current = null;
   }, []);
 
@@ -310,7 +316,7 @@ function GraphContent() {
                 </button>
               </div>
             ) : (
-              <h1 
+              <h1
                 onClick={() => setIsEditingName(true)}
                 className="text-2xl font-bold text-gray-900 cursor-pointer hover:bg-white/30 px-3 py-2 rounded-lg transition-all duration-200 flex-1"
               >
@@ -390,7 +396,8 @@ function GraphContent() {
                     const blob = new Blob([res.data], {
                       type: res.headers["content-type"],
                     });
-                    let filename = system.Name + "_v" + system.Version + ".sysml";
+                    let filename =
+                      system.Name + "_v" + system.Version + ".sysml";
                     const contentDisposition =
                       res.headers["content-disposition"];
                     if (contentDisposition) {
@@ -683,6 +690,92 @@ function GraphContent() {
                   className="w-full px-3 py-2 bg-white/50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                 />
               </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Connection Details
+                </label>
+                <div className="space-y-4 max-h-[200px] overflow-y-auto pr-2">
+                  {Object.entries(selectedEdge.data).map(([key, value]) => {
+                    if (key === "label") {
+                      return null;
+                    }
+                    return (
+                      <div key={key}>
+                        <div className="flex items-center space-x-2">
+                          <label className="text-sm font-medium text-gray-700">
+                            {key}
+                          </label>
+                        </div>
+                        <div key={key} className="flex items-center space-x-2">
+                          <input
+                            type="text"
+                            value={value}
+                            onChange={(e) => {
+                              setSelectedEdge((eds) => ({
+                                ...eds,
+                                data: {
+                                  ...eds.data,
+                                  [key]: e.target.value,
+                                },
+                              }));
+                            }}
+                            className="flex-1 px-3 py-2 bg-white/50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                          />
+                          <button
+                            onClick={() => {
+                              setSelectedEdge((eds) => {
+                                const newData = { ...eds.data };
+                                delete newData[key];
+                                return {
+                                  ...eds,
+                                  data: newData,
+                                };
+                              });
+                            }}
+                            className="p-2 hover:bg-red-100 rounded-lg text-red-500 hover:text-red-600 transition-colors duration-200"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex space-x-2 mt-2">
+                  <input
+                    type="text"
+                    placeholder="New detail name"
+                    value={newConnectionProperty}
+                    onChange={(e) => setNewConnectionProperty(e.target.value)}
+                    className="flex-1 px-3 py-2 bg-white/50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  />
+                  <button
+                    onClick={() => {
+                      if (Object.keys(selectedEdge.data).includes(newConnectionProperty)) {
+                        toast.error("Property already exists");
+                        return;
+                      }
+                      if (newConnectionProperty === "") {
+                        toast.error("Property name cannot be empty");
+                        return;
+                      }
+                      setSelectedEdge((eds) => ({
+                        ...eds,
+                        data: {
+                          ...eds.data,
+                          [newConnectionProperty]: "",
+                        },
+                      }));
+                      setNewConnectionProperty("");
+                    }}
+                    className="px-4 py-2 bg-blue-500/90 text-white rounded-lg hover:bg-blue-600/90 transition-all duration-200"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div className="flex flex-col space-y-3 pt-4 border-t border-gray-200/50">
@@ -693,10 +786,7 @@ function GraphContent() {
                       ed.id === selectedEdge.id
                         ? {
                             ...ed,
-                            data: {
-                              ...ed.data,
-                              label: selectedEdge.data.label,
-                            },
+                            data: selectedEdge.data,
                           }
                         : ed
                     )
