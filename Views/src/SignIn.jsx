@@ -121,7 +121,7 @@ export default function SignIn() {
                 isLoading ? "opacity-75 cursor-not-allowed" : ""
               }`}
             >
-              "Sign in"
+              Sign in
             </button>
 
             <div className="text-center text-sm">

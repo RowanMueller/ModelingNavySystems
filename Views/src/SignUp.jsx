@@ -170,7 +170,7 @@ export default function SignUp() {
                 isLoading ? "opacity-75 cursor-not-allowed" : ""
               }`}
             >
-              "Sign up"
+              Sign up
             </button>
 
             <div className="text-center text-sm">
