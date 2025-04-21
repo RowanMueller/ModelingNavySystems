@@ -1,6 +1,7 @@
 package Devices {
 
     part def Device {
+        property id: Float?; 
         property AssetId: String;
         property Manufacturer: String?;
         property ModelNumber: String?;
@@ -25,6 +26,7 @@ package Devices {
     }
 
     part instance TABLE W/VIBRATION ISOLATION SYSTEM: Device {
+        id = 47; 
         assetIdentifier = "77020";
         manufacturer = "TECHNICAL MFG CO.";
         modelNumber = "77A-440-02";
@@ -49,6 +51,7 @@ package Devices {
     }
 
     part instance CAMERA, DIGITAL W/SCSI COMPUTER BOARD & POWER SUPPLY: Device {
+        id = 
         assetIdentifier = "77368";
         manufacturer = "POLAROID";
         modelNumber = "DMC1";

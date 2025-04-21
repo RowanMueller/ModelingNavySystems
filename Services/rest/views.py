@@ -13,7 +13,7 @@ from .models import Connection, Device, System
 from rest_framework.permissions import IsAuthenticated
 from functools import wraps
 from django.http import HttpResponse
-
+import json 
 import re
 import pandas as pd
 from django.contrib.auth.models import User
@@ -157,7 +157,7 @@ class FileUploadView(APIView):
             elif file.name.endswith('.sysml'):
                 print(f"Reading SysML file: {file.name}")
                 df = self.read_sysml(file)
-                print(df)
+                self.process_connections(file, system)
             else:
                 return Response({
                     "error": "Invalid file format. Please upload a CSV or Excel file."
@@ -185,36 +185,82 @@ class FileUploadView(APIView):
                     Floor=row.get('Floor'),
                     RoomNumber=row.get('Room Number'), 
                     AdditionalAsJson=row.get('Additional JSON'),
-                    Xposition=0,
-                    Yposition=y, 
+                    Xposition=row.get('Xposition', 0),
+                    Yposition=row.get('Yposition', y),
                     SystemVersion=1,
                     System=system
                 )
                 device.save()
-                y += 50
-
+                if row.get('Yposition') is None: 
+                    y += 50 
         return Response({
             "message": "Files uploaded successfully",
             "files": uploaded_files,
             "system": SystemSerializer(system).data
         }, status=status.HTTP_201_CREATED)
     
+    def process_connections(self, file, system):
+        content = file.read().decode("utf-8")
+
+        # Match connections in the form: part instance A -> B::DeviceConnection { ... }
+        pattern = r"part instance (.+?) -> (.+?)::DeviceConnection\s*\{(.*?)\}"
+        matches = re.findall(pattern, content, re.DOTALL)
+
+        for source_name_raw, target_name_raw, block in matches:
+            source_name = source_name_raw.strip()
+            target_name = target_name_raw.strip()
+
+            # Extract connectionType
+            type_match = re.search(r"connectionType\s*=\s*\"(.*?)\"", block)
+            connection_type = type_match.group(1) if type_match else "unknown"
+
+            # Extract connectionDetails
+            details_match = re.search(r"connectionDetails\s*=\s*(\".*?\"|\{.*?\})", block, re.DOTALL)
+            if details_match:
+                details_raw = details_match.group(1).strip()
+                if details_raw.startswith("{"):
+                    try:
+                        connection_details = json.loads(details_raw)
+                    except json.JSONDecodeError:
+                        connection_details = {"raw": details_raw}
+                else:
+                    connection_details = {"details": details_raw.strip('"')}
+            else:
+                connection_details = {}
+
+            try:
+                source_device = Device.objects.get(AssetName=source_name, System=system)
+                target_device = Device.objects.get(AssetName=target_name, System=system)
+            except Device.DoesNotExist:
+                print(f"Skipping connection; device not found: {source_name} or {target_name}")
+                continue
+
+            # Create the connection
+            Connection.objects.create(
+                System=system,
+                SystemVersion=system.Version or 1,
+                Source=source_device,
+                Target=target_device,
+                ConnectionType=connection_type,
+                ConnectionDetails=connection_details
+            )
+            print(f"Created connection from {source_name} to {target_name} of type {connection_type}")
+
     def read_sysml(self, file):
-        # Read and decode the SysML file
-        # Column mapping to convert SysML names to proper Django names: YOU HAVE TO CHANGE THIS EVERY TIME YOU CHANGE THE MODEL
+        # Column mapping from SysML attributes to Django model field names
         COLUMN_MAPPING = {
             "assetIdentifier": "Asset Identifier",
             "manufacturer": "Manufacturer",
             "modelNumber": "Model Number",
             "serialNumber": "Serial Number",
             "comments": "Comments",
-            "assetCost": "Asset Cost Amount",
+            "assetCostAmount": "Asset Cost Amount",
             "netBookValueAmount": "Net Book Value Amount",
             "ownership": "Ownership",
             "inventoryDate": "Inventory Date",
             "datePlacedInService": "Date Placed In Service",
-            "usefulLife": "Useful Life Periods",
-            "assetType": "Asset Type", 
+            "usefulLifePeriods": "Useful Life Periods",
+            "assetType": "Asset Type",
             "assetName": "Asset Name",
             "locationID": "Location ID",
             "buildingNumber": "Building Number",
@@ -227,40 +273,56 @@ class FileUploadView(APIView):
 
         sysml_content = file.read().decode('utf-8')
 
-        # Extract part instances using regex
-        part_instance_pattern = r"part instance ([\w\-]+)\s*{([^}]+)}"
-        matches = re.findall(part_instance_pattern, sysml_content)
+        # Improved regex pattern to better match part instances
+        part_pattern = r"part instance ([^:]+): Device\s*{([^}]*)}"
+        matches = re.findall(part_pattern, sysml_content)
 
         part_instances = []
 
         for part_name, attributes in matches:
-            part_data = {"PartName": part_name}
+            part_data = {
+                "PartName": part_name.strip()
+            }
             additional_data = {}
 
-            for line in attributes.splitlines():
+            # Process each line inside the part instance block
+            for line in attributes.strip().splitlines():
+                line = line.strip()
                 if '=' in line:
                     field_name, field_value = line.split('=', 1)
                     field_name = field_name.strip()
-                    field_value = field_value.strip().strip('"')
+                    
+                    # Clean the value by removing quotes, semicolons, and extra whitespace
+                    field_value = field_value.strip()
+                    if field_value.startswith('"') and field_value.endswith('"'):
+                        field_value = field_value[1:-1]
+                    elif field_value.startswith("'") and field_value.endswith("'"):
+                        field_value = field_value[1:-1]
+                    
+                    # Remove any trailing semicolons
+                    if field_value.endswith(';'):
+                        field_value = field_value[:-1].strip()
 
-                    # Store using the correct column name if available
                     if field_name in COLUMN_MAPPING:
                         mapped_name = COLUMN_MAPPING[field_name]
                         part_data[mapped_name] = field_value
                     else:
-                        # Store unmapped fields in additional_data
                         additional_data[field_name] = field_value
 
-            # Add additional data as JSON string
-            part_data["Additional JSON"] = additional_data
-
+            # Store any additional fields as JSON
+            part_data["Additional_JSON"] = additional_data
+            
+            # THIS LINE WAS MISSING - Add the processed part to our list
             part_instances.append(part_data)
 
-        # Create a pandas DataFrame with renamed columns
+        # Create DataFrame from processed part instances
+        if not part_instances:
+            return pd.DataFrame()
+        
         df = pd.DataFrame(part_instances)
 
-        # Fill missing values with an empty string
-        df = df.fillna('')
+        # Fill missing fields with empty string or empty dict
+        df = df.fillna({'Additional_JSON': {}, **{col: '' for col in df.columns if col != 'Additional_JSON'}})
 
         return df
 
@@ -423,38 +485,37 @@ class DownloadSysMLView(APIView):
         connections_serializer = ConnectionSerializer(connections, many=True)
         devices_data = device_serializer.data
         connections = connections_serializer.data
-        text = self.write_devices(devices_data) + "\n\n" + self.write_connections(connections)
+        text = self.write_devices(devices_data, connections) + "\n\n" + self.write_connections(connections)
         return text
 
-    def write_devices(self, devices_data):
+    def write_devices(self, devices_data, connections):
         # Define package for devices
-        package = """
-package Devices {
+        package = """package Devices {
 
     part def Device {
-        property AssetId: String;
-        property Manufacturer: String?;
-        property ModelNumber: String?;
-        property AssetName: String?;
-        property SerialNumber: String?;
-        property Comments: String?;
-        property AssetCostAmount: Float?;
-        property NetBookValueAmount: String?;
-        property Ownership: String?;
-        property InventoryDate: String?;
-        property DatePlacedInService: String?;
-        property UsefulLifePeriods: String?;
-        property AssetType: String?;
-        property LocationID: String?;
-        property BuildingNumber: String?;
-        property BuildingName: String?;
-        property Floor: String?;
-        property RoomNumber: String?;
-        property AdditionalAsJson: Json?;
-        property Xposition: Float?;
-        property Yposition: Float?;
-    }
-\n
+        property id: String;
+        property assetId: String;
+        property manufacturer: String?;
+        property modelNumber: String?;
+        property assetName: String?;
+        property serialNumber: String?;
+        property comments: String?;
+        property assetCostAmount: Float?;
+        property netBookValueAmount: String?;
+        property ownership: String?;
+        property inventoryDate: String?;
+        property datePlacedInService: String?;
+        property usefulLifePeriods: String?;
+        property assetType: String?;
+        property locationID: String?;
+        property buildingNumber: String?;
+        property buildingName: String?;
+        property floor: String?;
+        property roomNumber: String?;
+        property additionalAsJson: Json?;
+        property xPosition: Float?;
+        property yPosition: Float?;
+    }\n
 """
 
         COLUMN_MAPPING = {
@@ -490,6 +551,7 @@ package Devices {
             name = name.upper().replace(" ", "_")
 
             output += f'    part instance {name}: Device {{\n'
+            output += f'         id = "{device.get("id")}";\n'
 
             for original_key, formatted_key in COLUMN_MAPPING.items():
                 value = device.get(original_key)
@@ -510,22 +572,20 @@ package Devices {
                 v_str = f'"{v}"' if not isinstance(v, (int, float)) else v
                 key_name = k.replace(" ", "_")  # sanitize key name
                 output += f'         {key_name} = {v_str};\n'
-            output += '    }\n\n'        
+            output += '    }\n'        
         output += "}"
         return output
     
     def write_connections(self, connections_data):
         # Define connections package in sysml 
-        package = """
-package Connections {
+        package = """package Connections {
 
     part def DeviceConnection {
         property connectionType: String;
         property connectionDetails: Json?;
         property source: Float?;
         property target: Float?;
-    }
-\n
+    }\n
 """
 
         output = package 
@@ -533,18 +593,16 @@ package Connections {
             connection_type = connection.get("ConnectionType")
             source_id = connection.get("Source")
             target_id = connection.get("Target")
-            print(f"Source ID: {type(source_id)}, Target ID: {target_id}")
             source_device = Device.objects.get(id=source_id)
             target_device = Device.objects.get(id=target_id)
             source = source_device.AssetName if source_device else "Unknown_Source"
             target = target_device.AssetName if target_device else "Unknown_Target"
-            print(f"Source: {source_device}, Target: {target_device}")
             connection_details = connection.get("ConnectionDetails")
             output += f'    part instance {source} -> {target}::DeviceConnection {{\n'
             output += f'        connectionType = "{connection_type}";\n'
             output += f'        connectionDetails = "{connection_details}";\n'
-            output += f'        source = "{source}";\n'  
-            output += f'        target = "{target}";\n' 
+            output += f'        source = Devices::{source_device.AssetName};\n'  
+            output += f'        target = Devices::{target_device.AssetName};\n' 
             output += '    }\n'
         output += "}"
         return output
