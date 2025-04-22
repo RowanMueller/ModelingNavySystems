@@ -474,6 +474,8 @@ function GraphContent() {
           onNodeMouseLeave={onNodeMouseLeave}
           className="w-full h-full"
           defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+          minZoom={0.2}
+          maxZoom={4}
           edgeTypes={edgeTypes}
         >
           <Controls className="bg-white/80 backdrop-blur-md border border-white/20 shadow-lg" />
