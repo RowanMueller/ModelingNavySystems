@@ -31,23 +31,50 @@ export default function CustomEdge({
     targetPosition,
   });
 
+  // Calculate distance and animation duration
+  const distance = Math.sqrt(
+    Math.pow(targetX - sourceX, 2) + Math.pow(targetY - sourceY, 2)
+  );
+  const duration = Math.max(distance / 100, 1); // Scale factor of 100, minimum 1 second
+
+  const getEdgeStyle = () => {
+    const baseStyle = {
+      strokeWidth: "2px",
+    };
+
+    if (data.label === "power") {
+      return { ...baseStyle, stroke: "#ff0000" };
+    }
+    if (data.label === "network") {
+      return { ...baseStyle, stroke: "#00ff00" };
+    }
+    if (data.label === "command") {
+      return {
+        ...baseStyle,
+        strokeWidth: "4px", 
+      };
+    }
+    if (data.label === "sync") {
+      return {
+        ...baseStyle,
+        strokeDasharray: "5,5",
+        animation: `dashedLine 1s linear infinite`,
+      };
+    }
+    return { ...baseStyle };
+  };
+
   return (
     <>
       {data.label === "sync" && <style>{edgeAnimationStyle}</style>}
       <BaseEdge
         id={id}
         path={edgePath}
-        style={{
-          stroke: "var(--xy-theme-edge-hover)",
-          ...(data.label === "sync" && {
-            strokeDasharray: "5,5",
-            animation: "dashedLine 1s linear infinite",
-          }),
-        }}
+        style={getEdgeStyle()}
       />
       {data.label === "data" && (
         <circle r="10" fill="#009cff">
-          <animateMotion dur="2s" repeatCount="indefinite" path={edgePath} />
+          <animateMotion dur={`${duration}s`} repeatCount="indefinite" path={edgePath} />
         </circle>
       )}
       <EdgeLabelRenderer>
