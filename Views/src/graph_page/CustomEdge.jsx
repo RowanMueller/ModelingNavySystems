@@ -2,6 +2,15 @@ import { BaseEdge, EdgeLabelRenderer, getBezierPath } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import useGraph from "./useGraph";
 
+// Add keyframes animation
+const edgeAnimationStyle = `
+  @keyframes dashedLine {
+    to {
+      stroke-dashoffset: -20;
+    }
+  }
+`;
+
 export default function CustomEdge({
   id,
   sourceX,
@@ -22,10 +31,25 @@ export default function CustomEdge({
     targetPosition,
   });
 
-  console.log(data);
   return (
     <>
-      <BaseEdge id={id} path={edgePath} />
+      {data.label === "sync" && <style>{edgeAnimationStyle}</style>}
+      <BaseEdge
+        id={id}
+        path={edgePath}
+        style={{
+          stroke: "var(--xy-theme-edge-hover)",
+          ...(data.label === "sync" && {
+            strokeDasharray: "5,5",
+            animation: "dashedLine 1s linear infinite",
+          }),
+        }}
+      />
+      {data.label === "data" && (
+        <circle r="10" fill="#009cff">
+          <animateMotion dur="2s" repeatCount="indefinite" path={edgePath} />
+        </circle>
+      )}
       <EdgeLabelRenderer>
         <div
           className="absolute -translate-x-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm p-2 rounded-lg shadow-lg text-sm pointer-events-auto cursor-pointer hover:bg-white/90 transition-all duration-200 border border-gray-200/50"
@@ -52,4 +76,4 @@ export default function CustomEdge({
       </EdgeLabelRenderer>
     </>
   );
-};
+}
