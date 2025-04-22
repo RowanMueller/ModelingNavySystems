@@ -56,6 +56,7 @@ function GraphContent() {
   const [onDelete, setOnDelete] = useState(false);
   const focusedNodeRef = useRef(null);
   const [newProperty, setNewProperty] = useState("");
+  const [onSavingProcessing, setOnSavingProcessing] = useState(false);
   const [newConnectionProperty, setNewConnectionProperty] = useState("");
   const location = useLocation();
   const { version } = useParams();
@@ -200,8 +201,8 @@ function GraphContent() {
   }, [version]);
 
   const handleSave = async () => {
-    if (!flowInstance) return;
-
+    if (!flowInstance || onSavingProcessing) return;
+    setOnSavingProcessing(true);
     axios
       .post(
         `${import.meta.env.VITE_BASE_URL}/api/v1/${system.id}/save-graph/`,
@@ -219,6 +220,7 @@ function GraphContent() {
       )
       .then(() => {
         toast.success("Graph saved successfully");
+        setOnSavingProcessing(false);
         navigate(`/system/${system.id}/${system.Version + 1}`, {
           state: {
             system: {
@@ -231,6 +233,7 @@ function GraphContent() {
       .catch((err) => {
         toast.error("Error saving graph");
         console.log(err);
+        setOnSavingProcessing(false);
       });
   };
 

@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 export default function UploadPage() {
   const [files, setFiles] = useState([]);
   const [systemName, setSystemName] = useState("");
+  const [onUploadProcessing, setOnUploadProcessing] = useState(false);
   const navigate = useNavigate();
   
   const onDrop = useCallback((acceptedFiles) => {
@@ -116,10 +117,12 @@ export default function UploadPage() {
             <button
               className="px-4 py-3 bg-blue-500/90 backdrop-blur-md text-white rounded-lg hover:bg-blue-600/90 transition-all duration-300 flex items-center justify-center border border-blue-400/20 shadow-lg"
               onClick={() => {
-                if (systemName === "") {
+                if (systemName === "" || onUploadProcessing) {
                   toast.error("Please enter a system name");
                   return;
                 }
+
+                setOnUploadProcessing(true);
 
                 if (files.length === 0) {
                   axios
@@ -170,6 +173,7 @@ export default function UploadPage() {
                   )
                   .then((response) => {
                     toast.success("Successfully uploaded files");
+                    setOnUploadProcessing(false);
                     navigate(`/system/${response.data.system.id}/1`, {
                       state: {
                         system: response.data.system,
@@ -179,6 +183,7 @@ export default function UploadPage() {
                   .catch((error) => {
                     console.log(error);
                     toast.error("Error creating system");
+                    setOnUploadProcessing(false);
                   });
               }}
             >
