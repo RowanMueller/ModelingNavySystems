@@ -73,7 +73,7 @@ export default function CustomEdge({
         style={getEdgeStyle()}
       />
       {data.label === "data" && (
-        <circle r="10" fill="#009cff">
+        <circle r="7" fill="#009cff">
           <animateMotion dur={`${duration}s`} repeatCount="indefinite" path={edgePath} />
         </circle>
       )}
