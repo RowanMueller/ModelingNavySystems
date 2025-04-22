@@ -464,6 +464,14 @@ function GraphContent() {
 
       {/* Main Content */}
       <div className="ml-[350px] h-screen">
+        <div className="text-black absolute right-2 top-2 flex flex-col gap-2 items-end">
+          <span className="text-md font-bold">
+            Total Devices: {nodes.length}
+          </span>
+          <span className="text-md font-bold">
+            Total Connections: {edges.length}
+          </span>
+        </div>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -758,7 +766,11 @@ function GraphContent() {
                   />
                   <button
                     onClick={() => {
-                      if (Object.keys(selectedEdge.data).includes(newConnectionProperty)) {
+                      if (
+                        Object.keys(selectedEdge.data).includes(
+                          newConnectionProperty
+                        )
+                      ) {
                         toast.error("Property already exists");
                         return;
                       }
