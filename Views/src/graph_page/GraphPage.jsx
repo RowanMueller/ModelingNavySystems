@@ -501,17 +501,17 @@ function GraphContent() {
               <div className="flex items-center gap-2">
                 <div
                   className="w-8 h-1"
-                  style={{ backgroundColor: "black" }}
+                  style={{ backgroundColor: "#9e9e9e" }}
                 ></div>
                 <span>Command</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-8 h-0.5 border-t-2 border-dashed border-black"></div>
+                <div className="w-8 h-1 border-t-0 border-b-2 border-l-0 border-r-0 border-[#9e9e9e] border-dashed"></div>
                 <span>Sync</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-8 h-0.5 bg-[#] relative">
-                  <div className="absolute -top-1 left-3 w-2 h-2 rounded-full bg-[#000000]"></div>
+                <div className="w-8 h-0.5 bg-[#9e9e9e] relative">
+                  <div className="absolute -top-1 left-3 w-2 h-2 rounded-full bg-[#009cff]"></div>
                 </div>
                 <span>Data</span>
               </div>
