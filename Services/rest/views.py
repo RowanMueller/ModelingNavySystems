@@ -142,6 +142,8 @@ class FileUploadView(APIView):
 
             uploaded_files = []
             processing_results = []
+            total_nodes = 0
+            total_edges = 0
 
             for file in request.FILES.getlist('files'):
                 try:
@@ -160,6 +162,10 @@ class FileUploadView(APIView):
                     if file.name.endswith('.sysml'):
                         try:
                             result = self.parse_sysml_file(file, system, version or 1)
+                            if result.get('devices_created'):
+                                total_nodes += result.get('devices_created', 0)
+                            if result.get('connections_created'):
+                                total_edges += result.get('connections_created', 0)
                             processing_results.append({
                                 'file_name': file.name,
                                 'type': 'sysml',
@@ -230,6 +236,12 @@ class FileUploadView(APIView):
                     "error": "No files were processed successfully",
                     "processing_results": processing_results
                 }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Update system counts
+            system.NodeCount = total_nodes
+            system.EdgeCount = total_edges
+            print(f"System {system.id} has {system.NodeCount} nodes and {system.EdgeCount} edges")
+            system.save()
 
             # end_time = time.time()
             # print(f"Time taken for file upload: {end_time - start_time} seconds")
@@ -497,6 +509,8 @@ class SaveSystem(APIView):
             system.save()
             
             id_to_device = {}
+            created_devices = []
+            created_connections = []
 
             for device_data in devices:
                 data = device_data.get("data", {})
@@ -521,7 +535,9 @@ class SaveSystem(APIView):
                 if additional_data:
                     cleaned_data["AdditionalAsJson"] = additional_data
                 
-                id_to_device[device_data.get("id")] = Device.objects.create(**cleaned_data, System=system)
+                device = Device.objects.create(**cleaned_data, System=system)
+                id_to_device[device_data.get("id")] = device
+                created_devices.append(device)
 
             for connection_data in connections:
                 source = connection_data.get("source")
@@ -537,7 +553,7 @@ class SaveSystem(APIView):
                     if key != 'label' and value is not None:
                         connection_details[key] = value
 
-                Connection.objects.create(
+                connection = Connection.objects.create(
                     System=system, 
                     Source=id_to_device[source], 
                     Target=id_to_device[target], 
@@ -545,6 +561,13 @@ class SaveSystem(APIView):
                     ConnectionDetails=connection_details,
                     SystemVersion=version
                 )
+                created_connections.append(connection)
+
+            # Update system counts
+            system.NodeCount = len(created_devices)
+            system.EdgeCount = len(created_connections)
+            print(f"System {system.id} has {system.NodeCount} nodes and {system.EdgeCount} edges")
+            system.save()
 
             return Response({"message": "System saved successfully."},
                             status=status.HTTP_200_OK)

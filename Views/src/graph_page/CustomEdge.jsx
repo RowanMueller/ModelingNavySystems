@@ -19,9 +19,11 @@ export default function CustomEdge({
   targetY,
   sourcePosition,
   targetPosition,
+  source,
+  target,
   data,
 }) {
-  const { edges, setSelectedEdge } = useGraph();
+  const { edges, setSelectedEdge, focusedNode } = useGraph();
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
@@ -38,15 +40,29 @@ export default function CustomEdge({
   const duration = Math.max(distance / 100, 1); // Scale factor of 100, minimum 1 second
 
   const getEdgeStyle = () => {
-    const baseStyle = {
-      strokeWidth: "2px",
-    };
+    let baseStyle;
+    if (focusedNode?.id === source) {
+      baseStyle = {
+        strokeWidth: "2px",
+        stroke: "#009cff"
+      };
+    } else if (focusedNode?.id === target) {
+      baseStyle = {
+        strokeWidth: "2px",
+        stroke: "#9c00ff"
+      };
+    } else {
+      baseStyle = {
+        strokeWidth: "2px",
+      };
+    }
+
 
     if (data.label === "power") {
-      return { ...baseStyle, stroke: "#ff0000" };
+      return { stroke: "#ff0000", ...baseStyle,  };
     }
     if (data.label === "network") {
-      return { ...baseStyle, stroke: "#00ff00" };
+      return { stroke: "#00ff00", ...baseStyle };
     }
     if (data.label === "command") {
       return {

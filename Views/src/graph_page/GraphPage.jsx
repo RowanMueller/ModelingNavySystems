@@ -49,12 +49,19 @@ export default function GraphPage() {
 function GraphContent() {
   const navigate = useNavigate();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const { edges, setEdges, onEdgesChange, selectedEdge, setSelectedEdge } =
-    useGraph();
+  const {
+    edges,
+    setEdges,
+    onEdgesChange,
+    selectedEdge,
+    setSelectedEdge,
+    selectedNode,
+    setSelectedNode,
+    focusedNode,
+    setFocusedNode,
+  } = useGraph();
   const [flowInstance, setFlowInstance] = useState(null);
-  const [selectedNode, setSelectedNode] = useState(null);
   const [onDelete, setOnDelete] = useState(false);
-  const focusedNodeRef = useRef(null);
   const [newProperty, setNewProperty] = useState("");
   const [onSavingProcessing, setOnSavingProcessing] = useState(false);
   const [newConnectionProperty, setNewConnectionProperty] = useState("");
@@ -169,12 +176,12 @@ function GraphContent() {
 
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
-        setSelectedNode(false);
+        setSelectedNode(null);
       }
       if (
         (event.metaKey || event.ctrlKey) &&
         event.key === "d" &&
-        focusedNodeRef.current
+        focusedNode
       ) {
         event.preventDefault();
         setNodes((nds) => [
@@ -182,12 +189,12 @@ function GraphContent() {
           {
             id: `new-${String(nds.length + 1)}`,
             position: {
-              x: focusedNodeRef.current.position.x + 300,
-              y: focusedNodeRef.current.position.y,
+              x: focusedNode.position.x + 300,
+              y: focusedNode.position.y,
             },
             data: {
-              ...focusedNodeRef.current.data,
-              label: `${focusedNodeRef.current.data.label} (copy)`,
+              ...focusedNode.data,
+              label: `${focusedNode.data.label} (copy)`,
             },
           },
         ]);
@@ -242,11 +249,11 @@ function GraphContent() {
   }, []);
 
   const onNodeMouseEnter = useCallback((event, node) => {
-    focusedNodeRef.current = node;
+    setFocusedNode(node);
   }, []);
 
   const onNodeMouseLeave = useCallback(() => {
-    focusedNodeRef.current = null;
+    setFocusedNode(null);
   }, []);
 
   const handleNameSave = async () => {
@@ -465,12 +472,71 @@ function GraphContent() {
       {/* Main Content */}
       <div className="ml-[350px] h-screen">
         <div className="text-black absolute right-2 top-2 flex flex-col gap-2 items-end">
+          <div className="bg-white/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-gray-200/50 mt-2 z-10 flex flex-col gap-2">
           <span className="text-md font-bold">
-            Total Devices: {nodes.length}
-          </span>
-          <span className="text-md font-bold">
-            Total Connections: {edges.length}
-          </span>
+              Total Devices: {nodes.length}
+            </span>
+            <span className="text-md font-bold">
+              Total Connections: {edges.length}
+            </span>
+          </div>
+          {/* Connection Types Legend */}
+          <div className="bg-white/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-gray-200/50 mt-2 z-10">
+            <div className="text-md font-bold mb-2">Connection Types</div>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-8 h-0.5"
+                  style={{ backgroundColor: "#ff0000" }}
+                ></div>
+                <span>Power</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-8 h-0.5"
+                  style={{ backgroundColor: "#00ff00" }}
+                ></div>
+                <span>Network</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-8 h-1"
+                  style={{ backgroundColor: "black" }}
+                ></div>
+                <span>Command</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-0.5 border-t-2 border-dashed border-black"></div>
+                <span>Sync</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-0.5 bg-[#] relative">
+                  <div className="absolute -top-1 left-3 w-2 h-2 rounded-full bg-[#000000]"></div>
+                </div>
+                <span>Data</span>
+              </div>
+            </div>
+          </div>
+          {/* Connection Types Legend */}
+          <div className="bg-white/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-gray-200/50 mt-2 z-10">
+            <div className="text-md font-bold mb-2">On Focused Node</div>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-8 h-0.5"
+                  style={{ backgroundColor: "#009cff" }}
+                ></div>
+                <span>Source of Focused</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-8 h-0.5"
+                  style={{ backgroundColor: "#9c00ff" }}
+                ></div>
+                <span>Target of Focused</span>
+              </div>
+            </div>
+          </div>
         </div>
         <ReactFlow
           nodes={nodes}

@@ -47,11 +47,15 @@ export default function Dashboard() {
       <div className="space-y-3">
         <div className="flex items-center space-x-2 text-gray-600">
           <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-          <p>Total Nodes: {system.NodeCount}</p>
+          <p>Total Devices: {system.NodeCount}</p>
         </div>
         <div className="flex items-center space-x-2 text-gray-600">
           <div className="w-2 h-2 rounded-full bg-indigo-400"></div>
-          <p>Total Edges: {system.EdgeCount}</p>
+          <p>Total Connections: {system.EdgeCount}</p>
+        </div>
+        <div className="flex items-center space-x-2 text-gray-600">
+          <div className="w-2 h-2 rounded-full bg-green-400"></div>
+          <p>Version: {system.Version}</p>
         </div>
       </div>
     </div>
