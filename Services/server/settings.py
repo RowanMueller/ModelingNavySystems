@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     "corsheaders",
     'rest_framework',
     'rest_framework_simplejwt',
-    'rest'
+    'Services.rest'
 ]
 
 REST_FRAMEWORK = {
@@ -90,7 +90,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
 ]
 
-ROOT_URLCONF = 'server.urls'
+ROOT_URLCONF = 'Services.server.urls'
+
 
 TEMPLATES = [
     {
@@ -108,7 +109,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'server.wsgi.application'
+WSGI_APPLICATION = 'Services.server.wsgi.application'
+
 
 
 # Database
@@ -119,13 +121,15 @@ tmpPostgres = urlparse(os.getenv("DATABASE_URL"))
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': tmpPostgres.path.replace('/', ''),
+        'NAME': str(tmpPostgres.path).replace('/', ''),
         'USER': tmpPostgres.username,
         'PASSWORD': tmpPostgres.password,
-        'HOST': tmpPostgres.hostname,
-        'PORT': 5432,
+        'HOST': 'db',#tmpPostgres.hostname,
+        'PORT' : '5432',
     }
 }
+
+
 
 
 # Password validation
@@ -168,3 +172,4 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
