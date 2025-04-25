@@ -31,7 +31,7 @@ SECRET_KEY = 'django-insecure-0-)8&4-aaw(bes^cb9a6)y(lr8n0f7)14@y^73$!$j6rn%or4w
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['44.212.221.32', '*']
 
 
 # Application definition
@@ -89,6 +89,7 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:3000",
+    "https://modeling-navel-compute-system.web.app",
 ]
 
 ROOT_URLCONF = 'Services.server.urls'
@@ -122,11 +123,11 @@ tmpPostgres = urlparse(os.getenv("DATABASE_URL"))
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': str(tmpPostgres.path).replace('/', ''),
+        'NAME': tmpPostgres.path[1:] if tmpPostgres.path else '',  # Remove leading slash and handle bytes
         'USER': tmpPostgres.username,
         'PASSWORD': tmpPostgres.password,
-        'HOST': 'db',#tmpPostgres.hostname,
-        'PORT' : '5432',
+        'HOST': tmpPostgres.hostname,
+        'PORT': 5432,
     }
 }
 
