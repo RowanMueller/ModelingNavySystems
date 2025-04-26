@@ -96,6 +96,39 @@ function GraphContent() {
     [setSelectedEdge]
   );
 
+  const handleKeyDown = useCallback((event) => {
+    if (event.key === "Escape") {
+      setSelectedNode(null);
+    }
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "d") {
+      event.preventDefault();
+      if (focusedNode) {
+        const newNodeId = `new-${String(nodes.length + 1)}`;
+        setNodes((nds) => [
+          ...nds,
+          {
+            id: newNodeId,
+            position: {
+              x: focusedNode.position.x + 300,
+              y: focusedNode.position.y,
+            },
+            data: {
+              ...focusedNode.data,
+              label: `${focusedNode.data.label} (copy)`,
+            },
+          },
+        ]);
+      }
+    }
+  }, [focusedNode, nodes.length, setNodes, setSelectedNode]);
+
+  useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleKeyDown]);
+
   useEffect(() => {
     const fetchData = async () => {
       let newNodes = [];
@@ -135,7 +168,6 @@ function GraphContent() {
               },
             };
           });
-          setNodes(newNodes);
         });
 
       await axios
@@ -167,44 +199,12 @@ function GraphContent() {
               type: "custom",
             };
           });
+          setNodes(newNodes);
           setEdges(newEdges);
         });
-      setNodes(newNodes);
     };
 
     fetchData();
-
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        setSelectedNode(null);
-      }
-      if (
-        (event.metaKey || event.ctrlKey) &&
-        event.key === "d" &&
-        focusedNode
-      ) {
-        event.preventDefault();
-        setNodes((nds) => [
-          ...nds,
-          {
-            id: `new-${String(nds.length + 1)}`,
-            position: {
-              x: focusedNode.position.x + 300,
-              y: focusedNode.position.y,
-            },
-            data: {
-              ...focusedNode.data,
-              label: `${focusedNode.data.label} (copy)`,
-            },
-          },
-        ]);
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
   }, [version]);
 
   const handleSave = async () => {
@@ -473,7 +473,7 @@ function GraphContent() {
       <div className="ml-[350px] h-screen">
         <div className="text-black absolute right-2 top-2 flex flex-col gap-2 items-end">
           <div className="bg-white/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-gray-200/50 mt-2 z-10 flex flex-col gap-2">
-          <span className="text-md font-bold">
+            <span className="text-md font-bold">
               Total Devices: {nodes.length}
             </span>
             <span className="text-md font-bold">

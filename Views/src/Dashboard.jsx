@@ -17,6 +17,8 @@ export default function Dashboard() {
     try {
       setIsLoading(true);
       
+      // await new Promise(resolve => setTimeout(resolve, 1000)); // Add 1 second delay
+      
       const response = await axios.get(
         `${import.meta.env.VITE_BASE_URL}/api/v1/get-systems/`,
         {
