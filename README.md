@@ -1,5 +1,11 @@
 # ModelingNavySystems
 
+Web app for modeling navy systems: create systems, upload SysML/CSV data, visualize as graphs, and export to SysML. Built with Django (backend), React (frontend), and PostgreSQL.
+
+**Documentation:** See **[docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md)** for a high-level overview of tools, languages, and architecture. See **[docs/REFACTORING_AND_DOCS.md](docs/REFACTORING_AND_DOCS.md)** for a refactoring and documentation plan to make new features easier to add.
+
+---
+
 ## Frontend (React)
 
 ### Prerequisites
