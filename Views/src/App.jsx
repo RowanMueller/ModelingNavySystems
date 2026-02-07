@@ -9,6 +9,7 @@ import Dashboard from "./Dashboard";
 import { AuthProvider } from "./authContext";
 import { ProtectedRoute } from "./ProtectedRoute";
 import UploadPage from "./UploadPage";
+import Simulation from "./Simulation";
 
 function App() {
   return (
@@ -47,6 +48,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Download />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/simulate"
+              element={
+                <ProtectedRoute>
+                  <Simulation />
                 </ProtectedRoute>
               }
             />

@@ -22,4 +22,6 @@ COPY . .
 
 ENV PYTHONPATH="${PYTHONPATH}:/app"
 
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Use entrypoint to wait for DB, run migrations, then start server.
+RUN chmod +x /app/docker-entrypoint.sh
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

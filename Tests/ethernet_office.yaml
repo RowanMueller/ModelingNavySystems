@@ -1,0 +1,95 @@
+system:
+  name: "Office-Network"
+  version: 1
+
+devices:
+  - id: "core-sw1"
+    name: "CoreSwitch-1"
+    type: "switch"
+    vendor: "Cisco"
+    model: "C9300-24T"
+    ports:
+      - name: "Gi1/0/1"
+        speed_mbps: 1000
+        trunk: true
+        allowed_vlans: [10, 20]
+      - name: "Gi1/0/2"
+        speed_mbps: 1000
+        trunk: true
+        allowed_vlans: [10, 20]
+  - id: "access-sw1"
+    name: "AccessSwitch-1"
+    type: "switch"
+    vendor: "Aruba"
+    model: "2530-24G"
+    ports:
+      - name: "1"
+        speed_mbps: 1000
+        access_vlan: 10
+      - name: "2"
+        speed_mbps: 1000
+        access_vlan: 20
+  - id: "fw1"
+    name: "Firewall-1"
+    type: "firewall"
+    vendor: "PaloAlto"
+    model: "PA-220"
+  - id: "host-a"
+    name: "Finance-PC"
+    type: "host"
+  - id: "host-b"
+    name: "Engineering-PC"
+    type: "host"
+  - id: "server-1"
+    name: "Web-Server"
+    type: "host"
+
+links:
+  - from: "core-sw1"
+    to: "access-sw1"
+    bandwidth_mbps: 1000
+    latency_ms: 1
+    trunk: true
+    allowed_vlans: [10, 20]
+  - from: "core-sw1"
+    to: "fw1"
+    bandwidth_mbps: 1000
+    latency_ms: 2
+    trunk: true
+    allowed_vlans: [10, 20]
+  - from: "access-sw1"
+    to: "host-a"
+    bandwidth_mbps: 100
+    latency_ms: 1
+  - from: "access-sw1"
+    to: "host-b"
+    bandwidth_mbps: 100
+    latency_ms: 1
+  - from: "core-sw1"
+    to: "server-1"
+    bandwidth_mbps: 1000
+    latency_ms: 1
+
+traffic_profiles:
+  - device: "host-a"
+    name: "finance-traffic"
+    flows:
+      - to: "server-1"
+        protocol: "tcp"
+        dst_port: 443
+        rate_mbps: 50
+        vlan: 10
+  - device: "host-b"
+    name: "eng-traffic"
+    flows:
+      - to: "server-1"
+        protocol: "tcp"
+        dst_port: 443
+        rate_mbps: 120
+        vlan: 20
+
+firewall_rules:
+  - device: "fw1"
+    action: "deny"
+    protocol: "tcp"
+    dst_port: 22

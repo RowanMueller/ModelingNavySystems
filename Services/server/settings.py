@@ -26,12 +26,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-0-)8&4-aaw(bes^cb9a6)y(lr8n0f7)14@y^73$!$j6rn%or4w'
+# Default is intentionally dev-only and should be overridden in Docker/env.
+SECRET_KEY = os.getenv("SECRET_KEY", "dev-insecure-change-me")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "0") == "1"
 
-ALLOWED_HOSTS = ['44.212.221.32', '*']
+# Allow hosts via env for Docker; defaults are local-only.
+_allowed_hosts = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1")
+ALLOWED_HOSTS = [host.strip() for host in _allowed_hosts.split(",") if host.strip()]
 
 
 # Application definition
@@ -55,7 +58,6 @@ REST_FRAMEWORK = {
     ),
 }
 
-from datetime import timedelta
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
@@ -89,6 +91,7 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:3000",
+    "http://localhost:3001",
     "https://modeling-navel-compute-system.web.app",
 ]
 
@@ -117,17 +120,30 @@ WSGI_APPLICATION = 'Services.server.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-tmpPostgres = urlparse(os.getenv("DATABASE_URL"))
+database_url = os.getenv("DATABASE_URL", "")
+if database_url:
+    tmp_postgres = urlparse(database_url)
+    db_name = tmp_postgres.path[1:] if tmp_postgres.path else ""
+    db_user = tmp_postgres.username
+    db_password = tmp_postgres.password
+    db_host = tmp_postgres.hostname
+    db_port = tmp_postgres.port or 5432
+else:
+    # Fallback for local/dev runs without DATABASE_URL.
+    db_name = os.getenv("POSTGRES_DB", "navydb")
+    db_user = os.getenv("POSTGRES_USER", "navyuser")
+    db_password = os.getenv("POSTGRES_PASSWORD", "changeThisPassword")
+    db_host = os.getenv("POSTGRES_HOST", "localhost")
+    db_port = int(os.getenv("POSTGRES_PORT", "5432"))
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': tmpPostgres.path[1:] if tmpPostgres.path else '',  # Remove leading slash and handle bytes
-        'USER': tmpPostgres.username,
-        'PASSWORD': tmpPostgres.password,
-        'HOST': tmpPostgres.hostname,
-        'PORT': 5432,
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": db_name,
+        "USER": db_user,
+        "PASSWORD": db_password,
+        "HOST": db_host,
+        "PORT": db_port,
     }
 }
 
@@ -169,6 +185,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# File uploads for Django default storage.
+# In Docker we set MEDIA_ROOT=/data so files stay inside a volume.
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.getenv("MEDIA_ROOT", str(BASE_DIR / "uploads"))
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

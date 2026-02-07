@@ -1,5 +1,13 @@
 from rest_framework import serializers
-from .models import Device, System , Connection
+from .models import (
+    Device,
+    System,
+    Connection,
+    Port,
+    TrafficProfile,
+    FirewallRule,
+    ConfigFile,
+)
 
 class DeviceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -14,4 +22,28 @@ class SystemSerializer(serializers.ModelSerializer):
 class ConnectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Connection
+        fields = '__all__'
+
+
+class PortSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Port
+        fields = '__all__'
+
+
+class TrafficProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TrafficProfile
+        fields = '__all__'
+
+
+class FirewallRuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FirewallRule
+        fields = '__all__'
+
+
+class ConfigFileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ConfigFile
         fields = '__all__'

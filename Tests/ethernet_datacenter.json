@@ -1,0 +1,51 @@
+{
+  "system": {
+    "name": "Mini-DC",
+    "version": 1
+  },
+  "devices": [
+    {
+      "id": "dist-sw1",
+      "name": "DistSwitch-1",
+      "type": "switch",
+      "vendor": "Juniper",
+      "model": "EX4300-24T",
+      "ports": [
+        { "name": "xe-0/0/1", "speed_mbps": 10000, "trunk": true, "allowed_vlans": [100, 200] },
+        { "name": "xe-0/0/2", "speed_mbps": 10000, "trunk": true, "allowed_vlans": [100, 200] }
+      ]
+    },
+    {
+      "id": "tor-sw1",
+      "name": "ToR-1",
+      "type": "switch",
+      "vendor": "Arista",
+      "model": "7050SX3-48YC12",
+      "ports": [
+        { "name": "Ethernet1", "speed_mbps": 25000, "access_vlan": 100 },
+        { "name": "Ethernet2", "speed_mbps": 25000, "access_vlan": 200 }
+      ]
+    },
+    { "id": "fw-edge", "name": "EdgeFW", "type": "firewall", "vendor": "Fortinet", "model": "FG-60F" },
+    { "id": "app-1", "name": "App-Server", "type": "host" },
+    { "id": "db-1", "name": "DB-Server", "type": "host" }
+  ],
+  "links": [
+    { "from": "dist-sw1", "to": "tor-sw1", "bandwidth_mbps": 10000, "latency_ms": 1, "trunk": true, "allowed_vlans": [100, 200] },
+    { "from": "dist-sw1", "to": "fw-edge", "bandwidth_mbps": 1000, "latency_ms": 2 },
+    { "from": "tor-sw1", "to": "app-1", "bandwidth_mbps": 1000, "latency_ms": 1 },
+    { "from": "tor-sw1", "to": "db-1", "bandwidth_mbps": 1000, "latency_ms": 1 }
+  ],
+  "traffic_profiles": [
+    {
+      "device": "app-1",
+      "name": "app-to-db",
+      "flows": [
+        { "to": "db-1", "protocol": "tcp", "dst_port": 5432, "rate_mbps": 200, "vlan": 100 }
+      ]
+    }
+  ],
+  "firewall_rules": [
+    { "device": "fw-edge", "action": "deny", "protocol": "tcp", "dst_port": 23 }
+  ]
+}

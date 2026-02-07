@@ -1,5 +1,5 @@
 from rest_framework import generics
-from .models import Device, System 
+from .models import Device, System
 from .serializers import DeviceSerializer, ConnectionSerializer, SystemSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -9,11 +9,14 @@ from django.core.files.base import ContentFile
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Connection, Device, System
+from .models import Connection, Device, System, Port, TrafficProfile, FirewallRule, ConfigFile
+from .serializers import PortSerializer, TrafficProfileSerializer, FirewallRuleSerializer, ConfigFileSerializer
+from .simulation import compute_simulation
 from rest_framework.permissions import IsAuthenticated
 from functools import wraps
 from django.http import HttpResponse
-import json 
+import json
+import yaml
 import re
 import pandas as pd
 from django.contrib.auth.models import User
@@ -501,7 +504,29 @@ class SaveSystem(APIView):
                             status=status.HTTP_400_BAD_REQUEST)
                     # Get the existing system by ID and user
         try:            
-            NORMAL_FIELDS = ["AssetId", "Manufacturer", "ModelNumber", "SerialNumber", "Comments", "AssetCostAmount", "NetBookValueAmount", "Ownership", "InventoryDate", "DatePlacedInService", "UsefulLifePeriods", "AssetType", "AssetName", "LocationID", "BuildingNumber", "BuildingName", "Floor", "RoomNumber"]
+            NORMAL_FIELDS = [
+                "AssetId",
+                "Manufacturer",
+                "ModelNumber",
+                "SerialNumber",
+                "Comments",
+                "AssetCostAmount",
+                "NetBookValueAmount",
+                "Ownership",
+                "InventoryDate",
+                "DatePlacedInService",
+                "UsefulLifePeriods",
+                "AssetType",
+                "AssetName",
+                "LocationID",
+                "BuildingNumber",
+                "BuildingName",
+                "Floor",
+                "RoomNumber",
+                "DeviceType",
+                "IpAddress",
+                "IsOnline",
+            ]
             EXCLUDED_FIELDS = ["Xposition", "Yposition", "SystemVersion", "System", "id"]
 
             system = System.objects.get(id=systemId, User=user)
@@ -726,6 +751,203 @@ class DownloadSysMLView(APIView):
             output += '    }\n'        
         output += "}"
         return output
+
+
+def _parse_config_text(format_hint, raw_text):
+    if format_hint == "json":
+        return json.loads(raw_text)
+    return yaml.safe_load(raw_text)
+
+
+def _get_device_by_label(system, version, label):
+    return Device.objects.filter(
+        System=system,
+        SystemVersion=version,
+        AssetId=label,
+    ).first() or Device.objects.filter(
+        System=system,
+        SystemVersion=version,
+        AssetName=label,
+    ).first()
+
+
+class ConfigImportView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        try:
+            format_hint = request.data.get("format")
+            raw_text = None
+            if "file" in request.FILES:
+                config_file = request.FILES["file"]
+                raw_text = config_file.read().decode("utf-8")
+                if not format_hint:
+                    format_hint = "json" if config_file.name.endswith(".json") else "yaml"
+            elif "config" in request.data:
+                raw_text = request.data.get("config")
+            if not raw_text:
+                return Response({"error": "Config text or file is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+            config = _parse_config_text(format_hint or "yaml", raw_text)
+            system_name = config.get("system", {}).get("name") or request.data.get("name") or "Ethernet System"
+            version = config.get("system", {}).get("version") or int(request.data.get("version") or 1)
+
+            system = System.objects.create(
+                Name=system_name,
+                User=request.user,
+                Version=version,
+            )
+
+            device_map = {}
+            for device_data in config.get("devices", []):
+                asset_id = device_data.get("id") or device_data.get("name")
+                attributes = device_data.get("attributes") or {}
+                device = Device.objects.create(
+                    System=system,
+                    SystemVersion=version,
+                    AssetId=asset_id,
+                    AssetName=device_data.get("name"),
+                    Manufacturer=device_data.get("vendor"),
+                    ModelNumber=device_data.get("model"),
+                    DeviceType=device_data.get("type", "generic"),
+                    IpAddress=device_data.get("ip") or attributes.get("ip"),
+                    IsOnline=device_data.get("online", True),
+                    AdditionalAsJson=attributes,
+                )
+                device_map[asset_id] = device
+                for idx, port in enumerate(device_data.get("ports", [])):
+                    Port.objects.create(
+                        System=system,
+                        SystemVersion=version,
+                        Device=device,
+                        Name=port.get("name", f"eth{idx}"),
+                        Index=port.get("index", idx),
+                        SpeedMbps=port.get("speed_mbps", 1000),
+                        Duplex=port.get("duplex", "full"),
+                        IsTrunk=port.get("trunk", False),
+                        AllowedVlans=port.get("allowed_vlans"),
+                        AccessVlan=port.get("access_vlan"),
+                        AdminUp=port.get("admin_up", True),
+                    )
+
+            for link_data in config.get("links", []):
+                src = device_map.get(link_data.get("from"))
+                dst = device_map.get(link_data.get("to"))
+                if not src or not dst:
+                    continue
+                Connection.objects.create(
+                    System=system,
+                    SystemVersion=version,
+                    Source=src,
+                    Target=dst,
+                    ConnectionType=link_data.get("type", "ethernet"),
+                    ConnectionDetails=link_data.get("details"),
+                    BandwidthMbps=link_data.get("bandwidth_mbps"),
+                    LatencyMs=link_data.get("latency_ms"),
+                    IsTrunk=link_data.get("trunk", False),
+                    AllowedVlans=link_data.get("allowed_vlans"),
+                    ErrorRate=link_data.get("error_rate"),
+                )
+
+            for profile in config.get("traffic_profiles", []):
+                device = device_map.get(profile.get("device"))
+                if not device:
+                    continue
+                TrafficProfile.objects.create(
+                    System=system,
+                    SystemVersion=version,
+                    Device=device,
+                    Name=profile.get("name", "default"),
+                    Profile=profile,
+                )
+
+            for rule in config.get("firewall_rules", []):
+                device = device_map.get(rule.get("device"))
+                if not device:
+                    continue
+                FirewallRule.objects.create(
+                    System=system,
+                    SystemVersion=version,
+                    Device=device,
+                    Action=rule.get("action", "allow"),
+                    Protocol=rule.get("protocol"),
+                    Src=rule.get("src"),
+                    Dst=rule.get("dst"),
+                    SrcPort=rule.get("src_port"),
+                    DstPort=rule.get("dst_port"),
+                    Vlan=rule.get("vlan"),
+                )
+
+            ConfigFile.objects.create(
+                System=system,
+                Name=system_name,
+                Format=format_hint or "yaml",
+                RawText=raw_text,
+                ParsedData=config,
+            )
+
+            system.NodeCount = Device.objects.filter(System=system).count()
+            system.EdgeCount = Connection.objects.filter(System=system).count()
+            system.save()
+
+            return Response({"system_id": system.id}, status=status.HTTP_201_CREATED)
+        except Exception as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SimulationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        system_id = request.data.get("system_id")
+        version = int(request.data.get("version") or 1)
+        if not system_id:
+            return Response({"error": "system_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            system = System.objects.get(id=system_id, User_id=request.user.id)
+        except System.DoesNotExist:
+            return Response({"error": "System not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        devices = Device.objects.filter(System=system, SystemVersion=version)
+        connections = Connection.objects.filter(System=system, SystemVersion=version)
+        profiles = TrafficProfile.objects.filter(System=system, SystemVersion=version)
+        rules = FirewallRule.objects.filter(System=system, SystemVersion=version)
+
+        result = compute_simulation(devices, connections, profiles, rules)
+        return Response(result, status=status.HTTP_200_OK)
+
+
+class ValidateTopologyView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        system_id = request.data.get("system_id")
+        version = int(request.data.get("version") or 1)
+        if not system_id:
+            return Response({"error": "system_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            system = System.objects.get(id=system_id, User_id=request.user.id)
+        except System.DoesNotExist:
+            return Response({"error": "System not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        devices = Device.objects.filter(System=system, SystemVersion=version)
+        connections = Connection.objects.filter(System=system, SystemVersion=version)
+
+        warnings = []
+        for device in devices:
+            port_count = Port.objects.filter(Device=device).count()
+            conn_count = connections.filter(Source=device).count() + connections.filter(Target=device).count()
+            if port_count and conn_count > port_count:
+                warnings.append(
+                    {
+                        "device": device.AssetId,
+                        "warning": "connections_exceed_ports",
+                        "ports": port_count,
+                        "connections": conn_count,
+                    }
+                )
+
+        return Response({"warnings": warnings}, status=status.HTTP_200_OK)
     
     def write_connections(self, connections_data):
         # Define connections package in sysml 

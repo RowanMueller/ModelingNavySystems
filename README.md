@@ -2,7 +2,7 @@
 
 Web app for modeling navy systems: create systems, upload SysML/CSV data, visualize as graphs, and export to SysML. Built with Django (backend), React (frontend), and PostgreSQL.
 
-**Documentation:** See **[docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md)** for a high-level overview of tools, languages, and architecture. See **[docs/REFACTORING_AND_DOCS.md](docs/REFACTORING_AND_DOCS.md)** for a refactoring and documentation plan to make new features easier to add.
+**Documentation:** See **[docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md)** for a high-level overview of tools, languages, and architecture. See **[docs/REFACTORING_AND_DOCS.md](docs/REFACTORING_AND_DOCS.md)** for a refactoring and documentation plan to make new features easier to add. Ethernet simulation details live in **[docs/ETHERNET_SIMULATION.md](docs/ETHERNET_SIMULATION.md)**.
 
 ---
 
@@ -32,6 +32,8 @@ npm run dev
 Login credentials:
 - Username: example
 - Password: 123456
+Note: in Docker, this user is created automatically. For local dev,
+use Sign Up if the user doesn't exist.
 
 ## Backend (Django)
 

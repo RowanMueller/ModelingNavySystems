@@ -1,4 +1,3 @@
-version: '3.9'
 services:
   web:
     build: .
@@ -14,20 +13,33 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeThisPassword}
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
-      - DEBUG=1
-      - ALLOWED_HOSTS=localhost,127.0.0.1
-      - SECRET_KEY=${DJANGO_SECRET_KEY:-your-secret-key-change-this}
+      # Keep dev settings explicit and overridable in Docker only.
+      - DEBUG=${DEBUG:-1}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-this}
       - DATABASE_URL=postgres://${POSTGRES_USER:-navyuser}:${POSTGRES_PASSWORD:-changeThisPassword}@db:5432/${POSTGRES_DB:-navydb}
+      # Store uploads inside the container/volume, not in the repo.
+      - MEDIA_ROOT=${MEDIA_ROOT:-/data}
+      # Optional: create a default login for local Docker.
+      - DEFAULT_USERNAME=${DEFAULT_USERNAME:-example}
+      - DEFAULT_PASSWORD=${DEFAULT_PASSWORD:-123456}
+      - DEFAULT_EMAIL=${DEFAULT_EMAIL:-example@example.com}
     volumes:
-      - .:/app
+      # Clean Docker: no bind-mount of the repo to avoid host writes.
+      - uploads:/data
     restart: unless-stopped
 
   frontend:
     build:
       context: .
       dockerfile: Views/Dockerfile
+      args:
+        # Vite reads these at build time.
+        - VITE_BASE_URL=${VITE_BASE_URL:-http://localhost:8000}
+        - VITE_OPTIONAL_LOGIN=${VITE_OPTIONAL_LOGIN:-false}
     ports:
-      - "3000:80"
+      # Avoid local conflicts if 3000 is already in use.
+      - "${FRONTEND_PORT:-3001}:80"
     depends_on:
       - web
     restart: unless-stopped
@@ -50,3 +62,4 @@ services:
 
 volumes:
   pgdata:
+  uploads:

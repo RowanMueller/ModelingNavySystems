@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from django.conf import settings
 from .models import Device
 
 def write_sysml_from_devices(devices, filename=None) -> str:
@@ -39,9 +40,11 @@ def write_sysml_from_devices(devices, filename=None) -> str:
         lines.append("}")
 
     filename = filename or f"devices_{datetime.now().strftime('%Y%m%d_%H%M%S')}.sysml"
-    filepath = os.path.join("uploads", filename)
+    relative_path = os.path.join("uploads", filename)
+    absolute_path = os.path.join(settings.MEDIA_ROOT, relative_path)
+    os.makedirs(os.path.dirname(absolute_path), exist_ok=True)
 
-    with open(filepath, "w") as f:
+    with open(absolute_path, "w") as f:
         f.write("\n".join(lines))
 
-    return filepath
+    return relative_path
