@@ -62,3 +62,4 @@ DEFAULT_EMAIL=example@example.com
 ```
 
 Docker Compose will automatically load `.env` if present.
+Never commit real secrets; use `.env.example` for placeholders.
