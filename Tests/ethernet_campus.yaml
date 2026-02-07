@@ -1,0 +1,107 @@
+system:
+  name: "Campus-Network"
+  version: 1
+
+devices:
+  - id: "core-1"
+    name: "Core-1"
+    type: "switch"
+    vendor: "Cisco"
+    model: "C9500-40X"
+    role: "core"
+  - id: "core-2"
+    name: "Core-2"
+    type: "switch"
+    vendor: "Cisco"
+    model: "C9500-40X"
+    role: "core"
+  - id: "dist-a"
+    name: "Distribution-A"
+    type: "switch"
+    vendor: "Juniper"
+    model: "EX4650"
+  - id: "dist-b"
+    name: "Distribution-B"
+    type: "switch"
+    vendor: "Juniper"
+    model: "EX4650"
+  - id: "fw-campus"
+    name: "Campus-FW"
+    type: "firewall"
+    vendor: "PaloAlto"
+    model: "PA-820"
+  - id: "lab-host"
+    name: "Lab-Host"
+    type: "host"
+    attributes:
+      ip: "10.30.10.10/24"
+  - id: "student-host"
+    name: "Student-Host"
+    type: "host"
+    attributes:
+      ip: "10.40.10.10/24"
+  - id: "datacenter"
+    name: "DataCenter-Server"
+    type: "host"
+    attributes:
+      ip: "10.50.10.10/24"
+
+links:
+  - from: "core-1"
+    to: "core-2"
+    bandwidth_mbps: 40000
+    latency_ms: 1
+    trunk: true
+    allowed_vlans: [30, 40, 50]
+  - from: "core-1"
+    to: "dist-a"
+    bandwidth_mbps: 10000
+    latency_ms: 2
+    trunk: true
+    allowed_vlans: [30, 40, 50]
+  - from: "core-2"
+    to: "dist-b"
+    bandwidth_mbps: 10000
+    latency_ms: 2
+    trunk: true
+    allowed_vlans: [30, 40, 50]
+  - from: "core-1"
+    to: "fw-campus"
+    bandwidth_mbps: 5000
+    latency_ms: 2
+  - from: "dist-a"
+    to: "lab-host"
+    bandwidth_mbps: 1000
+    latency_ms: 1
+  - from: "dist-b"
+    to: "student-host"
+    bandwidth_mbps: 1000
+    latency_ms: 1
+  - from: "core-2"
+    to: "datacenter"
+    bandwidth_mbps: 10000
+    latency_ms: 1
+
+traffic_profiles:
+  - device: "lab-host"
+    name: "lab-traffic"
+    flows:
+      - to: "datacenter"
+        protocol: "tcp"
+        dst_port: 443
+        rate_mbps: 300
+        vlan: 30
+  - device: "student-host"
+    name: "student-traffic"
+    flows:
+      - to: "datacenter"
+        protocol: "tcp"
+        dst_port: 443
+        rate_mbps: 150
+        vlan: 40
+
+firewall_rules:
+  - device: "fw-campus"
+    action: "deny"
+    protocol: "tcp"
+    dst_port: 22

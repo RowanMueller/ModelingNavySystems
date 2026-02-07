@@ -1,0 +1,48 @@
+system:
+  name: "Home-Network"
+  version: 1
+
+devices:
+  - id: "sw-home"
+    name: "Home-Switch"
+    type: "switch"
+    vendor: "Netgear"
+    model: "GS308"
+  - id: "pc-1"
+    name: "Desktop-PC"
+    type: "host"
+    ip: "192.168.1.10"
+  - id: "laptop-1"
+    name: "Laptop"
+    type: "host"
+    ip: "192.168.1.11"
+  - id: "iot-cam"
+    name: "IoT-Camera"
+    type: "host"
+    role: "iot"
+    ip: "192.168.1.50"
+  - id: "iot-light"
+    name: "IoT-Light"
+    type: "host"
+    role: "iot"
+    ip: "192.168.1.51"
+
+links:
+  - from: "sw-home"
+    to: "pc-1"
+    bandwidth_mbps: 1000
+    latency_ms: 1
+  - from: "sw-home"
+    to: "laptop-1"
+    bandwidth_mbps: 1000
+    latency_ms: 1
+  - from: "sw-home"
+    to: "iot-cam"
+    bandwidth_mbps: 100
+    latency_ms: 2
+  - from: "sw-home"
+    to: "iot-light"
+    bandwidth_mbps: 100
+    latency_ms: 2
+
+# No traffic_profiles: default 443 traffic between hosts is assumed.

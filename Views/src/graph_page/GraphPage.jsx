@@ -16,6 +16,8 @@ import { toast } from "react-hot-toast";
 import CustomEdge from "./CustomEdge";
 import useGraph from "./useGraph";
 import GraphProvider from "./GraphProvider";
+import dagre from "dagre";
+import CustomNode from "./CustomNode";
 
 // const initialNodes = [
 //   {
@@ -34,6 +36,125 @@ const initialNodes = [];
 // Define edgeTypes outside the component
 const edgeTypes = {
   custom: CustomEdge,
+};
+const nodeTypes = {
+  custom: CustomNode,
+};
+
+const NODE_WIDTH = 220;
+const NODE_HEIGHT = 70;
+
+const LAN_BASE = "192.168.1.";
+
+const buildLayout = (nodes, edges) => {
+  const layoutGraph = new dagre.graphlib.Graph();
+  layoutGraph.setDefaultEdgeLabel(() => ({}));
+  layoutGraph.setGraph({ rankdir: "LR", nodesep: 80, ranksep: 120 });
+
+  nodes.forEach((node) => {
+    layoutGraph.setNode(node.id, { width: NODE_WIDTH, height: NODE_HEIGHT });
+  });
+
+  edges.forEach((edge) => {
+    layoutGraph.setEdge(edge.source, edge.target);
+  });
+
+  dagre.layout(layoutGraph);
+
+  return nodes.map((node) => {
+    const { x, y } = layoutGraph.node(node.id);
+    return {
+      ...node,
+      position: { x: x - NODE_WIDTH / 2, y: y - NODE_HEIGHT / 2 },
+      positionAbsolute: { x: x - NODE_WIDTH / 2, y: y - NODE_HEIGHT / 2 },
+    };
+  });
+};
+
+const shouldAutoLayout = (nodes) =>
+  nodes.every((node) => {
+    const x = Number(node.position?.x ?? 0);
+    const y = Number(node.position?.y ?? 0);
+    return x === 0 && y === 0;
+  });
+
+const normalizeDeviceType = (device, additional) => {
+  const raw =
+    device.DeviceType ||
+    additional?.DeviceType ||
+    additional?.deviceType ||
+    (additional?.role === "iot" ? "host" : null);
+  if (!raw || raw === "generic") {
+    return additional?.ip ? "host" : "switch";
+  }
+  return String(raw).toLowerCase();
+};
+
+const assignLanIp = (index) => `${LAN_BASE}${100 + index}`;
+
+const applyNodeStyling = (node) => {
+  const isOnline = node.data.IsOnline !== false;
+  const type = node.data.DeviceType;
+  let bg = "#e5f4ff";
+  let border = "#60a5fa";
+  if (type === "switch") {
+    bg = "#eef2ff";
+    border = "#6366f1";
+  } else if (type === "host") {
+    bg = "#ecfeff";
+    border = "#06b6d4";
+  }
+  if (!isOnline) {
+    bg = "#f3f4f6";
+    border = "#9ca3af";
+  }
+  return {
+    ...node,
+    style: {
+      background: bg,
+      border: `2px solid ${border}`,
+      borderRadius: "10px",
+      opacity: isOnline ? 1 : 0.6,
+    },
+  };
+};
+
+const applyEdgeStatus = (nodes, edges) => {
+  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+  const rateByNodeId = new Map(
+    nodes.map((node) => [
+      node.id,
+      Number(node.data?.TrafficRateMbps ?? 10),
+    ])
+  );
+  return edges.map((edge) => {
+    const source = nodeById.get(edge.source);
+    const target = nodeById.get(edge.target);
+    const sourceOnline = source?.data?.IsOnline !== false;
+    const targetOnline = target?.data?.IsOnline !== false;
+    const sourceType = source?.data?.DeviceType;
+    const targetType = target?.data?.DeviceType;
+    const capacity = Number(edge.data?.BandwidthMbps ?? 1000);
+    const sourceRate = rateByNodeId.get(edge.source) || 0;
+    const targetRate = rateByNodeId.get(edge.target) || 0;
+    const utilization = Math.min(
+      1,
+      (sourceRate + targetRate) / Math.max(capacity, 1)
+    );
+    const animate =
+      sourceOnline &&
+      targetOnline &&
+      (sourceType === "host" || targetType === "host");
+    return {
+      ...edge,
+      data: {
+        ...edge.data,
+        animate,
+        utilization,
+        status: sourceOnline && targetOnline ? "up" : "down",
+      },
+    };
+  });
 };
 
 export default function GraphPage() {
@@ -59,6 +180,8 @@ function GraphContent() {
     setSelectedNode,
     focusedNode,
     setFocusedNode,
+    heatMode,
+    setHeatMode,
   } = useGraph();
   const [flowInstance, setFlowInstance] = useState(null);
   const [onDelete, setOnDelete] = useState(false);
@@ -152,8 +275,24 @@ function GraphContent() {
               Xposition,
               Yposition,
               System,
+              DeviceType,
+              IpAddress,
+              IsOnline,
               ...deviceData
             } = device;
+            const deviceType = normalizeDeviceType(device, AdditionalAsJson);
+            const ipAddress =
+              IpAddress ||
+              AdditionalAsJson?.ip ||
+              (deviceType === "host" ? assignLanIp(i + 1) : "");
+            const isOnline = IsOnline !== false;
+
+            const baseLabel =
+              device.AssetName || device.AssetId || `Device ${i + 1}`;
+            const label =
+              deviceType === "host" && ipAddress
+                ? `${baseLabel} (${ipAddress})`
+                : baseLabel;
 
             return {
               id: String(i + 1),
@@ -161,10 +300,17 @@ function GraphContent() {
                 x: Xposition,
                 y: Yposition,
               },
+              type: "custom",
               data: {
-                label: device.device_name || `Device ${i + 1}`,
+                label,
                 ...deviceData,
                 ...(AdditionalAsJson || {}),
+                DeviceType: deviceType,
+                IpAddress: ipAddress,
+                IsOnline: isOnline,
+                TrafficRateMbps:
+                  AdditionalAsJson?.TrafficRateMbps ??
+                  (deviceType === "host" ? 10 : 0),
               },
             };
           });
@@ -184,6 +330,19 @@ function GraphContent() {
         )
         .then((res) => {
           const newEdges = res.data.map((connection, i) => {
+            const bandwidth =
+              connection.BandwidthMbps ??
+              connection.ConnectionDetails?.bandwidth_mbps;
+            const latency =
+              connection.LatencyMs ??
+              connection.ConnectionDetails?.latency_ms;
+            const label =
+              connection.ConnectionType &&
+              connection.ConnectionType !== "ethernet"
+                ? connection.ConnectionType
+                : bandwidth
+                ? `${bandwidth} Mbps`
+                : "ethernet";
             return {
               id: String(i + 1),
               source: newNodes.find(
@@ -193,19 +352,29 @@ function GraphContent() {
                 (node) => node.data.id === connection.Target
               ).id,
               data: {
-                label: connection.ConnectionType,
+                label,
                 ...connection.ConnectionDetails,
+                BandwidthMbps: bandwidth,
+                LatencyMs: latency,
               },
               type: "custom",
             };
           });
-          setNodes(newNodes);
-          setEdges(newEdges);
+          const positionedNodes = shouldAutoLayout(newNodes)
+            ? buildLayout(newNodes, newEdges)
+            : newNodes;
+          const styledNodes = positionedNodes.map(applyNodeStyling);
+          setNodes(styledNodes);
+          setEdges(applyEdgeStatus(styledNodes, newEdges));
         });
     };
 
     fetchData();
   }, [version]);
+
+  useEffect(() => {
+    setEdges((eds) => applyEdgeStatus(nodes, eds));
+  }, [nodes, setEdges]);
 
   const handleSave = async () => {
     if (!flowInstance || onSavingProcessing) return;
@@ -388,6 +557,26 @@ function GraphContent() {
 
             <button
               onClick={() => {
+                setNodes((nds) =>
+                  buildLayout(nds, edges).map(applyNodeStyling)
+                );
+              }}
+              className="px-4 py-3 bg-indigo-500/90 backdrop-blur-md text-white rounded-lg hover:bg-indigo-600/90 transition-all duration-300 flex items-center justify-center border border-indigo-400/20 shadow-lg"
+            >
+              <span className="ml-2">Auto Layout</span>
+            </button>
+
+            <button
+              onClick={() => setHeatMode((prev) => !prev)}
+              className="px-4 py-3 bg-orange-500/90 backdrop-blur-md text-white rounded-lg hover:bg-orange-600/90 transition-all duration-300 flex items-center justify-center border border-orange-400/20 shadow-lg"
+            >
+              <span className="ml-2">
+                {heatMode ? "Hide Heat" : "Traffic Heat"}
+              </span>
+            </button>
+
+            <button
+              onClick={() => {
                 axios
                   .get(
                     `${import.meta.env.VITE_BASE_URL}/api/v1/${
@@ -554,6 +743,7 @@ function GraphContent() {
           minZoom={0.2}
           maxZoom={4}
           edgeTypes={edgeTypes}
+          nodeTypes={nodeTypes}
         >
           <Controls className="bg-white/80 backdrop-blur-md border border-white/20 shadow-lg" />
           <MiniMap className="bg-white/80 backdrop-blur-md border border-white/20 shadow-lg" />
@@ -666,6 +856,31 @@ function GraphContent() {
                   />
                 </div>
               ))}
+              {selectedNode.data.DeviceType === "host" && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Traffic Rate (Mbps)
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="200"
+                    step="5"
+                    value={selectedNode.data.TrafficRateMbps ?? 10}
+                    onChange={(e) => {
+                      const value = Number(e.target.value);
+                      setSelectedNode((nds) => ({
+                        ...nds,
+                        data: { ...nds.data, TrafficRateMbps: value },
+                      }));
+                    }}
+                    className="w-full"
+                  />
+                  <div className="text-sm text-gray-600">
+                    {selectedNode.data.TrafficRateMbps ?? 10} Mbps
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex space-x-2">
@@ -701,16 +916,42 @@ function GraphContent() {
             <div className="flex flex-col space-y-3 pt-4 border-t border-gray-200/50">
               <button
                 onClick={() => {
-                  setNodes((nds) =>
-                    nds
+                  setNodes((nds) => {
+                    const updated = nds
                       .filter((node) => node.id !== selectedNode.id)
-                      .concat(selectedNode)
-                  );
+                      .concat(applyNodeStyling(selectedNode));
+                    return updated;
+                  });
                   setSelectedNode(null);
                 }}
                 className="px-4 py-3 bg-blue-500/90 backdrop-blur-md text-white rounded-lg hover:bg-blue-600/90 transition-all duration-300 border border-blue-400/20 shadow-lg"
               >
                 Save Changes
+              </button>
+              <button
+                onClick={() => {
+                  const isOnline = selectedNode.data.IsOnline !== false;
+                  const updatedNode = {
+                    ...selectedNode,
+                    data: {
+                      ...selectedNode.data,
+                      IsOnline: !isOnline,
+                    },
+                  };
+                  setSelectedNode(updatedNode);
+                  setNodes((nds) =>
+                    nds.map((node) =>
+                      node.id === updatedNode.id
+                        ? applyNodeStyling(updatedNode)
+                        : node
+                    )
+                  );
+                }}
+                className="px-4 py-3 bg-yellow-500/90 backdrop-blur-md text-white rounded-lg hover:bg-yellow-600/90 transition-all duration-300 border border-yellow-400/20 shadow-lg"
+              >
+                {selectedNode.data.IsOnline !== false
+                  ? "Turn Off Node"
+                  : "Turn On Node"}
               </button>
 
               <button

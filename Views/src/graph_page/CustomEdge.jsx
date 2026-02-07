@@ -23,7 +23,7 @@ export default function CustomEdge({
   target,
   data,
 }) {
-  const { edges, setSelectedEdge, focusedNode } = useGraph();
+  const { edges, setSelectedEdge, focusedNode, heatMode } = useGraph();
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
@@ -39,7 +39,28 @@ export default function CustomEdge({
   );
   const duration = Math.max(distance / 100, 1); // Scale factor of 100, minimum 1 second
 
+  const getHeatColor = (utilization) => {
+    if (utilization >= 0.9) return "#dc2626";
+    if (utilization >= 0.7) return "#f97316";
+    if (utilization >= 0.4) return "#facc15";
+    return "#22c55e";
+  };
+
   const getEdgeStyle = () => {
+    if (data?.status === "down") {
+      return {
+        stroke: "#9e9e9e",
+        strokeWidth: "2px",
+        strokeDasharray: "6,6",
+      };
+    }
+    if (heatMode) {
+      const utilization = Number(data?.utilization ?? 0);
+      return {
+        stroke: getHeatColor(utilization),
+        strokeWidth: Math.max(2, utilization * 6),
+      };
+    }
     let baseStyle;
     if (focusedNode?.id === source) {
       baseStyle = {
@@ -88,7 +109,7 @@ export default function CustomEdge({
         path={edgePath}
         style={getEdgeStyle()}
       />
-      {data.label === "data" && (
+      {data?.animate && data?.status !== "down" && (
         <circle r="7" fill="#009cff">
           <animateMotion dur={`${duration}s`} repeatCount="indefinite" path={edgePath} />
         </circle>
@@ -106,6 +127,11 @@ export default function CustomEdge({
           }}
         >
           <div className="font-medium">{data?.label || "New Connection"}</div>
+          {heatMode && (
+            <div className="text-xs text-gray-600 mt-1">
+              Utilization: {Math.round((data?.utilization ?? 0) * 100)}%
+            </div>
+          )}
           {/* {data?.connectionDetails && Object.keys(data.connectionDetails).length > 0 && (
             <div className="text-xs text-gray-600 mt-1">
               {Object.entries(data.connectionDetails).map(([key, value]) => (

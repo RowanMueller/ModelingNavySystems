@@ -7,9 +7,22 @@ export default function GraphProvider({ children }) {
   const [selectedEdge, setSelectedEdge] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
   const [focusedNode, setFocusedNode] = useState(null);
+  const [heatMode, setHeatMode] = useState(false);
   return (
     <GraphContext.Provider
-      value={{ edges, setEdges, onEdgesChange, selectedEdge, setSelectedEdge, selectedNode, setSelectedNode, focusedNode, setFocusedNode }}
+      value={{
+        edges,
+        setEdges,
+        onEdgesChange,
+        selectedEdge,
+        setSelectedEdge,
+        selectedNode,
+        setSelectedNode,
+        focusedNode,
+        setFocusedNode,
+        heatMode,
+        setHeatMode,
+      }}
     >
       {children}
     </GraphContext.Provider>

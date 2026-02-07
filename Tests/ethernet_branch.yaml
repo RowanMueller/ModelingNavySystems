@@ -1,0 +1,88 @@
+system:
+  name: "Branch-Office"
+  version: 1
+
+devices:
+  - id: "edge-fw"
+    name: "Edge-Firewall"
+    type: "firewall"
+    vendor: "Fortinet"
+    model: "FG-60F"
+  - id: "dist-sw"
+    name: "Distribution-Switch"
+    type: "switch"
+    vendor: "Cisco"
+    model: "C9200-24P"
+    ports:
+      - name: "Gi1/0/1"
+        speed_mbps: 1000
+        trunk: true
+        allowed_vlans: [10, 20, 30]
+  - id: "ap-1"
+    name: "Wireless-AP"
+    type: "host"
+    attributes:
+      ip: "10.10.30.10/24"
+  - id: "pc-1"
+    name: "Finance-PC"
+    type: "host"
+    attributes:
+      ip: "10.10.10.20/24"
+  - id: "pc-2"
+    name: "HR-PC"
+    type: "host"
+    attributes:
+      ip: "10.10.20.21/24"
+  - id: "server-1"
+    name: "File-Server"
+    type: "host"
+    attributes:
+      ip: "10.10.10.50/24"
+
+links:
+  - from: "edge-fw"
+    to: "dist-sw"
+    bandwidth_mbps: 1000
+    latency_ms: 2
+    trunk: true
+    allowed_vlans: [10, 20, 30]
+  - from: "dist-sw"
+    to: "pc-1"
+    bandwidth_mbps: 100
+    latency_ms: 1
+  - from: "dist-sw"
+    to: "pc-2"
+    bandwidth_mbps: 100
+    latency_ms: 1
+  - from: "dist-sw"
+    to: "ap-1"
+    bandwidth_mbps: 1000
+    latency_ms: 1
+  - from: "dist-sw"
+    to: "server-1"
+    bandwidth_mbps: 1000
+    latency_ms: 1
+
+traffic_profiles:
+  - device: "pc-1"
+    name: "finance-app"
+    flows:
+      - to: "server-1"
+        protocol: "tcp"
+        dst_port: 445
+        rate_mbps: 30
+        vlan: 10
+  - device: "pc-2"
+    name: "hr-app"
+    flows:
+      - to: "server-1"
+        protocol: "tcp"
+        dst_port: 445
+        rate_mbps: 20
+        vlan: 20
+
+firewall_rules:
+  - device: "edge-fw"
+    action: "deny"
+    protocol: "tcp"
+    dst_port: 23
