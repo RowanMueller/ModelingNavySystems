@@ -157,3 +157,40 @@ class ConfigFile(models.Model):
 
     def __str__(self):
         return f"{self.System.Name}:{self.Name}"
+
+
+class TelemetrySession(models.Model):
+    System = models.ForeignKey(
+        System, on_delete=models.CASCADE, related_name="telemetry_sessions"
+    )
+    User = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="telemetry_sessions"
+    )
+    Name = models.CharField(max_length=200, default="Telemetry Session")
+    StartedAt = models.DateTimeField(auto_now_add=True)
+    EndedAt = models.DateTimeField(null=True, blank=True)
+    IsActive = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.System.Name}:{self.Name}"
+
+
+class TelemetrySample(models.Model):
+    Session = models.ForeignKey(
+        TelemetrySession, on_delete=models.CASCADE, related_name="samples"
+    )
+    Timestamp = models.DateTimeField()
+    Latitude = models.FloatField(null=True, blank=True)
+    Longitude = models.FloatField(null=True, blank=True)
+    AltitudeM = models.FloatField(null=True, blank=True)
+    VelocityXMps = models.FloatField(null=True, blank=True)
+    VelocityYMps = models.FloatField(null=True, blank=True)
+    VelocityZMps = models.FloatField(null=True, blank=True)
+    RollDeg = models.FloatField(null=True, blank=True)
+    PitchDeg = models.FloatField(null=True, blank=True)
+    YawDeg = models.FloatField(null=True, blank=True)
+    BatteryPct = models.FloatField(null=True, blank=True)
+    Extra = models.JSONField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.Session.id}:{self.Timestamp.isoformat()}"

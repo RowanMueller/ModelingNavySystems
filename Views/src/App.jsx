@@ -10,6 +10,7 @@ import { AuthProvider } from "./authContext";
 import { ProtectedRoute } from "./ProtectedRoute";
 import UploadPage from "./UploadPage";
 import Simulation from "./Simulation";
+import TelemetryDashboard from "./TelemetryDashboard";
 
 function App() {
   return (
@@ -56,6 +57,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Simulation />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/telemetry"
+              element={
+                <ProtectedRoute>
+                  <TelemetryDashboard />
                 </ProtectedRoute>
               }
             />

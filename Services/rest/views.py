@@ -1,6 +1,16 @@
 from rest_framework import generics
 from .models import Device, System
-from .serializers import DeviceSerializer, ConnectionSerializer, SystemSerializer
+from .serializers import (
+    DeviceSerializer,
+    ConnectionSerializer,
+    SystemSerializer,
+    PortSerializer,
+    TrafficProfileSerializer,
+    FirewallRuleSerializer,
+    ConfigFileSerializer,
+    TelemetrySessionSerializer,
+    TelemetrySampleSerializer,
+)
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -9,13 +19,24 @@ from django.core.files.base import ContentFile
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Connection, Device, System, Port, TrafficProfile, FirewallRule, ConfigFile
-from .serializers import PortSerializer, TrafficProfileSerializer, FirewallRuleSerializer, ConfigFileSerializer
+from .models import (
+    Connection,
+    Device,
+    System,
+    Port,
+    TrafficProfile,
+    FirewallRule,
+    ConfigFile,
+    TelemetrySession,
+    TelemetrySample,
+)
 from .simulation import compute_simulation
 from rest_framework.permissions import IsAuthenticated
 from functools import wraps
-from django.http import HttpResponse
+from django.http import HttpResponse, StreamingHttpResponse
 import json
+import csv
+import io
 import yaml
 import re
 import pandas as pd
@@ -23,6 +44,9 @@ from django.contrib.auth.models import User
 # import time
 from rest_framework import viewsets
 from rest_framework.decorators import api_view
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from django.utils import timezone
+import time
 
 # Create your views here.
 
@@ -751,6 +775,155 @@ class DownloadSysMLView(APIView):
             output += '    }\n'        
         output += "}"
         return output
+
+
+def _authenticate_request_from_query(request):
+    token = request.GET.get("token")
+    if not token:
+        return None
+    jwt_auth = JWTAuthentication()
+    try:
+        validated = jwt_auth.get_validated_token(token)
+        return jwt_auth.get_user(validated)
+    except Exception:
+        return None
+
+
+class TelemetrySessionListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        sessions = TelemetrySession.objects.filter(User=request.user).order_by("-StartedAt")
+        serializer = TelemetrySessionSerializer(sessions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class TelemetrySessionStartView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        system_id = request.data.get("system_id")
+        name = request.data.get("name") or "Telemetry Session"
+        if not system_id:
+            return Response({"error": "system_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            system = System.objects.get(id=system_id, User=request.user)
+        except System.DoesNotExist:
+            return Response({"error": "System not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        session = TelemetrySession.objects.create(
+            System=system, User=request.user, Name=name, IsActive=True
+        )
+        return Response(TelemetrySessionSerializer(session).data, status=status.HTTP_201_CREATED)
+
+
+class TelemetrySessionStopView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, sessionId, *args, **kwargs):
+        try:
+            session = TelemetrySession.objects.get(id=sessionId, User=request.user)
+        except TelemetrySession.DoesNotExist:
+            return Response({"error": "Session not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        session.IsActive = False
+        session.EndedAt = timezone.now()
+        session.save()
+        return Response(TelemetrySessionSerializer(session).data, status=status.HTTP_200_OK)
+
+
+class TelemetrySampleRecentView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, sessionId, *args, **kwargs):
+        limit = int(request.query_params.get("limit", 200))
+        try:
+            session = TelemetrySession.objects.get(id=sessionId, User=request.user)
+        except TelemetrySession.DoesNotExist:
+            return Response({"error": "Session not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        samples = (
+            TelemetrySample.objects.filter(Session=session)
+            .order_by("-Timestamp")[:limit]
+        )
+        serializer = TelemetrySampleSerializer(reversed(list(samples)), many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class TelemetrySampleExportView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, sessionId, *args, **kwargs):
+        try:
+            session = TelemetrySession.objects.get(id=sessionId, User=request.user)
+        except TelemetrySession.DoesNotExist:
+            return Response({"error": "Session not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        samples = TelemetrySample.objects.filter(Session=session).order_by("Timestamp")
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            "timestamp",
+            "latitude",
+            "longitude",
+            "altitude_m",
+            "velocity_x_mps",
+            "velocity_y_mps",
+            "velocity_z_mps",
+            "roll_deg",
+            "pitch_deg",
+            "yaw_deg",
+            "battery_pct",
+        ])
+        for s in samples:
+            writer.writerow([
+                s.Timestamp.isoformat(),
+                s.Latitude,
+                s.Longitude,
+                s.AltitudeM,
+                s.VelocityXMps,
+                s.VelocityYMps,
+                s.VelocityZMps,
+                s.RollDeg,
+                s.PitchDeg,
+                s.YawDeg,
+                s.BatteryPct,
+            ])
+        response = HttpResponse(output.getvalue(), content_type="text/csv")
+        response["Content-Disposition"] = f'attachment; filename="telemetry_session_{sessionId}.csv"'
+        return response
+
+
+class TelemetryStreamView(APIView):
+    def get(self, request, sessionId, *args, **kwargs):
+        user = _authenticate_request_from_query(request)
+        if not user:
+            return Response({"error": "Unauthorized."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            session = TelemetrySession.objects.get(id=sessionId, User=user)
+        except TelemetrySession.DoesNotExist:
+            return Response({"error": "Session not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        def event_stream():
+            last_ts = None
+            while True:
+                queryset = TelemetrySample.objects.filter(Session=session)
+                if last_ts:
+                    queryset = queryset.filter(Timestamp__gt=last_ts)
+                queryset = queryset.order_by("Timestamp")[:50]
+                new_samples = list(queryset)
+                for sample in new_samples:
+                    payload = TelemetrySampleSerializer(sample).data
+                    last_ts = sample.Timestamp
+                    yield f"data: {json.dumps(payload)}\n\n"
+                time.sleep(1)
+
+        response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
+        response["Cache-Control"] = "no-cache"
+        response["X-Accel-Buffering"] = "no"
+        return response
 
 
 def _parse_config_text(format_hint, raw_text):

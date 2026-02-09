@@ -7,6 +7,8 @@ from .models import (
     TrafficProfile,
     FirewallRule,
     ConfigFile,
+    TelemetrySession,
+    TelemetrySample,
 )
 
 class DeviceSerializer(serializers.ModelSerializer):
@@ -46,4 +48,16 @@ class FirewallRuleSerializer(serializers.ModelSerializer):
 class ConfigFileSerializer(serializers.ModelSerializer):
     class Meta:
         model = ConfigFile
+        fields = '__all__'
+
+
+class TelemetrySessionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TelemetrySession
+        fields = '__all__'
+
+
+class TelemetrySampleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TelemetrySample
         fields = '__all__'

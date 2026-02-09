@@ -22,4 +22,10 @@ urlpatterns = [
     path('<int:systemId>/delete-system/', views.DeleteSystemView.as_view(), name='delete-system'),
     path('<int:systemId>/<int:version>/get-devices/', views.GetDevicesView.as_view(), name='get-devices-system'),
     path('<int:systemId>/<int:version>/get-connections/', views.GetConnectionsView.as_view(), name='get-connections-system'),
+    path('telemetry/sessions/', views.TelemetrySessionListView.as_view(), name='telemetry-sessions'),
+    path('telemetry/sessions/start/', views.TelemetrySessionStartView.as_view(), name='telemetry-session-start'),
+    path('telemetry/sessions/<int:sessionId>/stop/', views.TelemetrySessionStopView.as_view(), name='telemetry-session-stop'),
+    path('telemetry/sessions/<int:sessionId>/samples/', views.TelemetrySampleRecentView.as_view(), name='telemetry-samples'),
+    path('telemetry/sessions/<int:sessionId>/export/', views.TelemetrySampleExportView.as_view(), name='telemetry-export'),
+    path('telemetry/sessions/<int:sessionId>/stream/', views.TelemetryStreamView.as_view(), name='telemetry-stream'),
 ]
